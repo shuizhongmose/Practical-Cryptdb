@@ -32,7 +32,9 @@ CXXFLAGS += -I$(MYBUILD)/include \
 	    -I$(MYBUILD)/sql \
 	    -DHAVE_CONFIG_H -DMYSQL_SERVER -DEMBEDDED_LIBRARY -DDBUG_OFF \
 	    -DMYSQL_BUILD_DIR=\"$(MYBUILD)\"
-LDFLAGS	 += -lpthread -lrt -ldl -lcrypt -lreadline
+# LDFLAGS	 += -lpthread -lrt -ldl -lcrypt -lreadline
+# glibc > 2.17 版本中不需要显示链接librt
+LDFLAGS	 += -lpthread -ldl -lcrypt -lreadline
 
 ## To be populated by Makefrag files
 

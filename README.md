@@ -47,3 +47,20 @@ obselete functions deleted
 + extended-insert
 + QUOTE
 + Search
+
+### Run in Docker 
+
+- build image
+
+  ```
+  docker build -it username/cryptdb:0.1 .
+  ```
+
+  
+
+- run CDB service container
+  - edit `docker/testcdb-compose.yaml`，change `image`
+  - run container: `docker-compose -f docker/testcdb-compose.yaml up -d`
+  - go into container `cdbservice`, and run `./cdbclient.sh` to start cdb client. Now you can test CDB.
+  - copy `docker/cdbcreate.sql` to container, and run it. Now cryptdb created.
+  - connect MySQL use port 3306, you can see encrypted  user table.

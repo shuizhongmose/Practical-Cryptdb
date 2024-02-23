@@ -1,0 +1,10 @@
+create database cryptdbtest;
+use cryptdbtest;
+create table user(id int, name varchar(10));
+insert into user values(1,"Alice");
+insert into user values(2,"Bob");
+insert into user values(3,"Callie");
+insert into user values(4,"Danger");
+insert into user values(5,"Ellen");
+insert into user values(6,"Penny");
+select * from user;
