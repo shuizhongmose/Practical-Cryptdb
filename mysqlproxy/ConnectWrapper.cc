@@ -436,11 +436,13 @@ next(lua_State *const L) {
 
 
     const std::unique_ptr<QueryRewrite> &qr = c_wrapper->getQueryRewrite();
+    // TODO？？
     parseReturnMeta(qr->rmeta);
     try {
         NextParams nparams(*ps, c_wrapper->default_db, c_wrapper->last_query);
 
         c_wrapper->selfKill(KillZone::Where::Before);
+        // 执行rewrite操作
         const auto &new_results = qr->executor->next(res, nparams);
         c_wrapper->selfKill(KillZone::Where::After);
 
@@ -456,8 +458,10 @@ next(lua_State *const L) {
             xlua_pushlstring(L, "again");
             const auto &output =
                 std::get<1>(new_results)->extract<std::pair<bool, std::string> >();
+            // output.first=true
             const auto &want_interim = output.first;
             lua_pushboolean(L, want_interim);
+            // output.second=string(query)，加密SQL
             const auto &next_query = output.second;
             xlua_pushlstring(L, next_query);
             nilBuffer(L, 2);

@@ -1291,9 +1291,10 @@ static std::string serilize_OnionAdjustExcept(OnionAdjustExcept &e){
 AbstractQueryExecutor *
 Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
 {
+    // step1. 将查询转换为LEX格式
     std::unique_ptr<query_parse> p;
     try {
-        p = std::unique_ptr<query_parse>(
+        p = std::unique_ptquery_parser<query_parse>(
                 new query_parse(a.getDatabaseName(), query));
     } catch (const CryptDBError &e) {
         FAIL_TextMessageError("Bad Query: [" + query + "]\n"
@@ -1301,6 +1302,7 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
     }
     LEX *const lex = p->lex();
 
+    // step2. 根据查询类型（DML、DDL等），选择合适的查询执行器（AbstractQueryExecutor）
     // optimization: do not process queries that we will not rewrite
     if (noRewrite(*lex)) {
         return new SimpleExecutor();
@@ -1331,6 +1333,8 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
                                                adjust_queries);
         }
         //为什么两种情况返回的executor是不一样的?一个用了get一个没有用?  
+        // DML使用了 AssignOnce<AbstractQueryExecutor *> 类型的 executor，这可能是一个封装，用于确保执行器对象只被赋值一次
+        // 当尝试从这个封装中获取执行器对象以返回时，使用了 .get() 方法来获取封装内部的指针。
         return executor.get();
     } else if (ddl_dispatcher->canDo(lex)) {
         const SQLHandler &handler = ddl_dispatcher->dispatch(lex);
@@ -1370,6 +1374,7 @@ Rewriter::rewrite(const std::string &q, const SchemaInfo &schema,
 
     // NOTE: Care what data you try to read from Analysis
     // at this height.
+    // 获取查询执行器
     AbstractQueryExecutor *const executor =
         Rewriter::dispatchOnLex(analysis, q);
     if (!executor) {

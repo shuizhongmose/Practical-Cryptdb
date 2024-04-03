@@ -10,7 +10,7 @@ To deploy this version, you need follow the following steps.
 + ./INSTALL.sh
 + source ~/.bashrc
 + source setup.sh
-+ run ./cdbserver.sh
++ run ./cdbserver.sh, if got error, delete shadow directory and restart cdbserver.
 + run ./cdbclient.sh 
 + enjoy it!
 
@@ -64,3 +64,8 @@ obselete functions deleted
   - go into container `cdbservice`, and run `./cdbclient.sh` to start cdb client. Now you can test CDB.
   - copy `docker/cdbcreate.sql` to container, and run it. Now cryptdb created.
   - connect MySQL use port 3306, you can see encrypted  user table.
+  
+# Run CryptDB benchmark test with SysBench
+
+## References
+> - Article [Bachelor Thesis Analysis of Encrypted Databases with CryptDB](https://www.nds.rub.de/media/ei/arbeiten/2015/10/26/thesis.pdf)

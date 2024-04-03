@@ -75,8 +75,8 @@ AbstractQueryExecutor *
             auto it =
                 List_iterator<Create_field>(lex->alter_info.create_list);
 
-	    //对现有的每个field, 如id,name, 都在内部通过createAndRewriteField函数扩展成多个洋葱+salt.
-	    //其中洋葱有多个层, 其通过newCreateField函数, 决定了类型, 而新的field的名字, 就是洋葱的名字传过去的.
+	        //对现有的每个field, 如id,name, 都在内部通过createAndRewriteField函数扩展成多个洋葱+salt.
+	        //其中洋葱有多个层, 其通过newCreateField函数, 决定了类型, 而新的field的名字, 就是洋葱的名字传过去的.
             //扩展以后, 就是新的Create_field类型了, 这了返回的list是被继续传到引用参数里面的, 很奇怪的用法.
             //key data在这里的作用是, 决定是不是unique, 从而选择和是的洋葱层次.
             new_lex->alter_info.create_list =
@@ -107,7 +107,7 @@ AbstractQueryExecutor *
                                 "Table " + pre.table + " already exists!");
             //why still rewrite here???
         }
-	//在handler的第一阶段, 通过analysis搜集delta以及执行计划等内容, 然后在第二阶段, 实行delta以及
+	    //在handler的第一阶段, 通过analysis搜集delta以及执行计划等内容, 然后在第二阶段, 实行delta以及
         //执行计划, 新的lex里面包含了改写以后的语句, 直接转化成string就可以用了.
         return new DDLQueryExecutor(*new_lex, std::move(a.deltas));
     }
@@ -415,6 +415,11 @@ nextImpl(const ResType &res, const NextParams &nparams)
 
         // execute the original query against the embedded database
         // > this is a ddl query so do not put it into a transaction
+        /**
+         * 这样的设计选择是基于DDL操作的性质及其对数据库结构直接影响的考虑。
+         * 这种做法有利于简化操作流程，减少性能开销，并且对于DDL操作来说，通常是合理的，
+         * 因为一旦决定修改数据库结构，这些更改往往是需要立即应用并且不可逆的。
+         */
         TEST_ErrPkt(nparams.ps.getEConn()->execute(nparams.original_query),
                    "Failed to execute DDL query against embedded database!");
 

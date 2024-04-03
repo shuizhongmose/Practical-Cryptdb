@@ -23,3 +23,8 @@ data
 mtl
 packages/mysql-proxy-0.8.5/
 .vscode/sftp.json
+GPATH
+GRTAGS
+GTAGS
+.vscode/c_cpp_properties.json
+.vscode/settings.json

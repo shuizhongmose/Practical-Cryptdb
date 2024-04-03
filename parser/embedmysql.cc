@@ -105,14 +105,16 @@ query_parse::query_parse(const std::string &db, const std::string &q)
         memcpy(buf, q.c_str(), q.size());
         buf[q.size()] = '\0';
         size_t len = q.size();
-
+        // 为解析SQL分配足够的内存
         alloc_query(t, buf, len + 1);
 
+        // 为 SQL 语句的解析准备环境和上下文
         if (ps.init(t, buf, len))
             throw CryptDBError("Parser_state::init");
 
 //  This is a wrapper of MYSQLparse(). All the code should call parse_sql()
 //  instead of MYSQLparse().
+        // SQL转化为lex格式
         if (parse_sql(t, &ps, 0))
             throw CryptDBError("parse_sql");
 
@@ -179,12 +181,18 @@ query_parse::query_parse(const std::string &db, const std::string &q)
          * initial code in mysql_execute_command() in sql_parse.cc.
          */
 
+        // 此函数的主要作用是在 SQL 查询的 FROM 子句中解析和验证指定的表名和别名
+        // 确保它们在查询的当前上下文中是有效的，并且能够被正确引用。
         lex->select_lex.context.resolve_in_table_list_only(
             lex->select_lex.table_list.first);
 
+        // 用于处理 SQL 查询中的派生表（也称为子查询或内联视图）。
+        // 派生表是从 SELECT 语句生成的临时表，通常在 FROM 子句中使用
         if (t->fill_derived_tables())
             throw CryptDBError("fill_derived_tables");
 
+        // 打开（即准备访问）查询中引用的普通表和派生表（子查询生成的临时表或视图）
+        // 确保了在执行查询前，所有必要的表都已经被识别、准备好，并且可用
         if (open_normal_and_derived_tables(t, lex->query_tables, 0))
             throw CryptDBError("open_normal_and_derived_tables");
 
@@ -192,6 +200,9 @@ query_parse::query_parse(const std::string &db, const std::string &q)
             if (!lex->select_lex.master_unit()->is_union() &&
                 !lex->select_lex.master_unit()->fake_select_lex)
             {
+                // 检查是否是简单的 SELECT 查询（非 UNION 和非 fake_select_lex）。
+                // 为这种查询创建一个 JOIN 对象，并准备查询
+                // 如果是 UNION 查询或存在 fake_select_lex，则抛出异常或执行另一种处理流程
                 JOIN *j = new JOIN(t, lex->select_lex.item_list,
                                    lex->select_lex.options, 0);
                 if (j->prepare(&lex->select_lex.ref_pointer_array,
@@ -225,6 +236,8 @@ query_parse::query_parse(const std::string &db, const std::string &q)
                  */
             }
         } else if (SQLCOM_DELETE == lex->sql_command) {
+            // 对 DELETE 操作进行准备（调用 mysql_prepare_delete）
+            // 设置引用数组和排序条件。
             if (mysql_prepare_delete(t, lex->query_tables,
                                      &lex->select_lex.where))
                 throw CryptDBError("mysql_prepare_delete");
@@ -240,6 +253,7 @@ query_parse::query_parse(const std::string &db, const std::string &q)
                             lex->select_lex.order_list.first))
                 throw CryptDBError("setup_order");
         } else if (SQLCOM_DELETE_MULTI == lex->sql_command) {
+            // 准备多表删除操作，设置条件（setup_conds）
             if (mysql_multi_delete_prepare(t)
                 || t->is_fatal_error)
                 throw CryptDBError("mysql_multi_delete_prepare");
@@ -250,6 +264,8 @@ query_parse::query_parse(const std::string &db, const std::string &q)
                 throw CryptDBError("setup_conds");
         } else if (lex->sql_command ==  SQLCOM_INSERT
                    || lex->sql_command == SQLCOM_REPLACE) {
+            // 为 INSERT 或 REPLACE 操作准备数据，包括处理多值插入情况
+            // 逐个处理每组插入的值，为它们设置字段（setup_fields）
             List_iterator_fast<List_item> its(lex->many_values);
             List_item *values = its++;
 
@@ -272,6 +288,8 @@ query_parse::query_parse(const std::string &db, const std::string &q)
                     throw CryptDBError("setup_fields");
             }
         } else if (lex->sql_command ==  SQLCOM_UPDATE) {
+            // 准备 UPDATE 操作
+            // 设置要更新的字段和值，包括处理内部引用和字段的设置
             if (mysql_prepare_update(t, lex->query_tables,
                                      &lex->select_lex.where,
                                      lex->select_lex.order_list.elements,

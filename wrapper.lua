@@ -165,6 +165,7 @@ function read_query_real(packet)
     --printred("QUERY: ".. query)
 
     if string.byte(packet) == proxy.COM_INIT_DB then
+        -- 转换为USE语句，切换数据库
         query = "USE `" .. query .. "`"
     end
 

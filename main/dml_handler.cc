@@ -102,7 +102,8 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
         // FIXME: Make vector of references.
         std::vector<FieldMeta *> fmVec;
         std::vector<Item *> implicit_defaults;
-
+        
+        // 使用rewriteInsertHelper对SQL进行重写
         //For insert, we can choose to specify field list or omit it.
         if (lex->field_list.head()) {
             auto it = List_iterator<Item>(lex->field_list);
@@ -1450,7 +1451,7 @@ nextImpl(const ResType &res, const NextParams &nparams)
 
             // Push the plaintext rows to the embedded database.
             const std::string &push_q =
-                " INSERT INTO " + this->plain_table +
+                "INSERT INTO " + this->plain_table +
                 " VALUES " + values_string + ";";
             SPECIALIZED_SYNC(nparams.ps.getEConn()->execute(push_q));
 
@@ -1523,7 +1524,7 @@ nextImpl(const ResType &res, const NextParams &nparams)
         yield {
             // > Add each row from the embedded database to the data database.
             const std::string &insert_q =
-                " INSERT INTO " + this->plain_table +
+                "INSERT INTO " + this->plain_table +
                 " VALUES " + this->escaped_output_values.get() + ";";
             const auto &rewritten_insert_q =
                 rewriteAndGetFirstQuery(insert_q, nparams);
@@ -1623,7 +1624,7 @@ addShowDirectiveEntry(const std::unique_ptr<Connect> &e_conn,
                       const std::string &level)
 {
     const std::string &query =
-        "INSERT INTO " + MetaData::Table::showDirective() +
+        "INSERT INTO" + MetaData::Table::showDirective() +
         " (_database, _table, _field, _onion, _level) VALUES "
         " ('" + database + "', '" + table + "',"
         "  '" + field + "', '" + onion + "', '" + level + "')";

@@ -630,6 +630,11 @@ createAndRewriteField(Analysis &a, Create_field * const cf,
 }
 
 //TODO: which encrypt/decrypt should handle null?
+// 1. 确保数据项不为空，即不为null。
+// 2. 获取数据项对应的洋葱元数据中的加密层级信息。
+// 3. 遍历每个加密层级，依次对数据项进行加密操作。
+// 4. 每个加密层级的加密操作通过调用相应的加密函数完成。
+// 5. 返回经过层级加密后的新数据项。
 Item *
 encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
                     const Analysis &a, uint64_t IV) {
