@@ -12,11 +12,11 @@ TOP	 := $(shell echo $${PWD-`pwd`})
 AR	 := ar
 ## -g -O0 -> -O2
 CXXFLAGS := -g -O0 -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
-	    -Wall -Werror -Wpointer-arith -Wendif-labels -Wformat=2  \
+	    -Wall -Wpointer-arith -Wendif-labels -Wformat=2  \
 	    -Wextra -Wmissing-noreturn -Wwrite-strings -Wno-unused-parameter \
 	    -Wno-deprecated \
 	    -Wmissing-declarations -Woverloaded-virtual  \
-	    -Wunreachable-code -D_GNU_SOURCE -std=c++0x -I$(TOP)
+	    -Wunreachable-code -D_GNU_SOURCE -std=c++0x -I$(TOP) -g
 LDFLAGS  := -L$(TOP)/$(OBJDIR) -Wl,--no-undefined
 
 

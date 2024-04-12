@@ -79,6 +79,7 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
 
     AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex)
         const{
+        // FIXME：new_lex是来自lex的浅拷贝
         LEX *const new_lex = copyWithTHD(lex);
         const std::string &table =
             lex->select_lex.table_list.first->table_name;
@@ -145,7 +146,7 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
                 rewriteInsertHelper(*make_item_string(def_value),
                                     *implicit_it, a, &implicit_defaults);
             }
-
+            // FIXME： field_list 需要在pop的时候手动清除空间
             new_lex->field_list = newList;
         } else {
             // No field list, use the table order.
@@ -200,6 +201,7 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
                 }
                 newList.push_back(newList0);
             }
+            // FIXME： many_values 需要在pop的时候手动清除空间
             new_lex->many_values = newList;
         }
 
@@ -217,6 +219,7 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
                                           &res_values),
                 "rewrite_field_value_pairs failed in ON DUPLICATE KEY"
                 " UPDATE");
+            // FIXME： update_list、value_list 需要在pop的时候手动清除空间
             new_lex->update_list = res_fields;
             new_lex->value_list = res_values;
         }

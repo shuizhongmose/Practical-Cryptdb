@@ -1294,7 +1294,7 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
     // step1. 将查询转换为LEX格式
     std::unique_ptr<query_parse> p;
     try {
-        p = std::unique_ptquery_parser<query_parse>(
+        p = std::unique_ptr<query_parse>(
                 new query_parse(a.getDatabaseName(), query));
     } catch (const CryptDBError &e) {
         FAIL_TextMessageError("Bad Query: [" + query + "]\n"

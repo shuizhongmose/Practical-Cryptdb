@@ -31,7 +31,6 @@ public:
     std::ofstream * PLAIN_LOG;
 
     WrapperState() {}
-    ~WrapperState() {}
 
     const std::unique_ptr<QueryRewrite> &getQueryRewrite() const {
         assert(this->qr);
@@ -281,6 +280,7 @@ rewrite(lua_State *const L) {
             c_wrapper->schema_info_refs.push_back(schema);
 
             //parse, rewrite, delta, adjust, returnMeta, 
+            // 实现rewrite操作
             std::unique_ptr<QueryRewrite> qr =
                 std::unique_ptr<QueryRewrite>(new QueryRewrite(
                     Rewriter::rewrite(query, *schema.get(),

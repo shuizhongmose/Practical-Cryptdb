@@ -957,6 +957,13 @@ lexToQuery(const LEX &lex)
 {
     std::ostringstream o;
     o << const_cast<LEX &>(lex);
+
+    // // 清空lex中的`field_list`、`many_values`、`update_list`、`value_list`
+    const_cast<LEX &>(lex).field_list.delete_elements();
+    const_cast<LEX &>(lex).many_values.delete_elements();
+    const_cast<LEX &>(lex).update_list.delete_elements();
+    const_cast<LEX &>(lex).value_list.delete_elements();
+    std::cout << ">>>>>> lex.lex.field_list is empty=" << const_cast<LEX &>(lex).field_list.is_empty() << std::endl;
     return o.str();
 }
 

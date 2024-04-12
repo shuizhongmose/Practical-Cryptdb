@@ -66,7 +66,7 @@ public:
     QueryRewrite(QueryRewrite &&other_qr) : rmeta(other_qr.rmeta),
         executor(std::move(other_qr.executor)) {}
     const ReturnMeta rmeta;
-    const KillZone kill_zone;
+    const KillZone kill_zone; 
     std::unique_ptr<AbstractQueryExecutor> executor;
 };
 
