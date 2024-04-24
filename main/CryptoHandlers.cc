@@ -519,6 +519,7 @@ RND_int::newCreateField(const Create_field &cf,
 Item *
 RND_int::encrypt(const Item &ptext, uint64_t IV) const
 {
+    // std::cout << "-------- current_thd in RND_int::encrypt =" << current_thd << std::endl;
     //TODO: should have encrypt_SEM work for any length
     const uint64_t p = RiboldMYSQL::val_uint(ptext);
     cinteger.checkValue(p);
@@ -533,6 +534,7 @@ RND_int::encrypt(const Item &ptext, uint64_t IV) const
 Item *
 RND_int::decrypt(const Item &ctext, uint64_t IV) const
 {
+    // std::cout << "-------- current_thd in RND_int::decrypt =" << current_thd << std::endl;
     const uint64_t c = static_cast<const Item_int &>(ctext).value;
     const uint64_t p = bf.decrypt(c) ^ IV;
     LOG(encl) << "RND_int decrypt " << c << " IV " << IV << " --> " << p;
@@ -559,6 +561,7 @@ static udf_func u_decRNDInt = {
 Item *
 RND_int::decryptUDF(Item * const col, Item * const ivcol) const
 {
+    // std::cout << "-------- current_thd in RND_int::decryptUDF =" << current_thd << std::endl;
     List<Item> l;
     l.push_back(col);
 
@@ -603,6 +606,7 @@ RND_str::newCreateField(const Create_field &cf,
 Item *
 RND_str::encrypt(const Item &ptext, uint64_t IV) const
 {
+    // std::cout << "-------- current_thd in RND_str::encrypt =" << current_thd << std::endl;
     const std::string &enc =
         encrypt_AES_CBC(ItemToString(ptext), enckey.get(),
                         BytesFromInt(IV, SALT_LEN_BYTES), do_pad);
@@ -619,6 +623,7 @@ RND_str::encrypt(const Item &ptext, uint64_t IV) const
 Item *
 RND_str::decrypt(const Item &ctext, uint64_t IV) const
 {
+    // std::cout << "-------- current_thd in RND_str::decrypt =" << current_thd << std::endl;
     const std::string &dec =
         decrypt_AES_CBC(ItemToString(ctext), deckey.get(),
                         BytesFromInt(IV, SALT_LEN_BYTES), do_pad);
@@ -651,6 +656,7 @@ static udf_func u_decRNDString = {
 Item *
 RND_str::decryptUDF(Item * const col, Item * const ivcol) const
 {
+    // std::cout << "-------- current_thd in RND_str::decryptUDF =" << current_thd << std::endl;
     List<Item> l;
     l.push_back(col);
     l.push_back(get_key_item(rawkey));
@@ -820,6 +826,7 @@ DET_abstract_integer::newCreateField(const Create_field &cf,
 Item *
 DET_abstract_integer::encrypt(const Item &ptext, uint64_t IV) const
 {
+    // std::cout << "-------- current_thd in DET_abstract_integer::encrypt =" << current_thd << std::endl;
     const ulonglong value = RiboldMYSQL::val_uint(ptext);
     getCInteger_().checkValue(value);
 
@@ -831,6 +838,7 @@ DET_abstract_integer::encrypt(const Item &ptext, uint64_t IV) const
 Item *
 DET_abstract_integer::decrypt(const Item &ctext, uint64_t IV) const
 {
+    // std::cout << "-------- current_thd in DET_abstract_integer::decrypt =" << current_thd << std::endl;
     const ulonglong value = static_cast<const Item_int &>(ctext).value;
     const ulonglong retdec = getBlowfish_().decrypt(value);
     LOG(encl) << "DET_int dec " << value << "--->" << retdec;
@@ -884,6 +892,7 @@ DET_str::newCreateField(const Create_field &cf,
 Item *
 DET_str::encrypt(const Item &ptext, uint64_t IV) const
 {
+    // std::cout << "-------- current_thd in DET_str::encrypt =" << current_thd << std::endl;
     const std::string plain = ItemToString(ptext);
     const std::string enc = encrypt_AES_CMC(plain, enckey.get(), do_pad);
     LOG(encl) << " DET_str encrypt " << plain  << " IV " << IV << " ---> "
@@ -897,6 +906,7 @@ DET_str::encrypt(const Item &ptext, uint64_t IV) const
 Item *
 DET_str::decrypt(const Item &ctext, uint64_t IV) const
 {
+    // std::cout << "-------- current_thd in DET_str::decrypt =" << current_thd << std::endl;
     const std::string enc = ItemToString(ctext);
     const std::string dec = decrypt_AES_CMC(enc, deckey.get(), do_pad);
     LOG(encl) << " DET_str decrypt enc len " << enc.length()
@@ -927,9 +937,11 @@ static udf_func u_decDETStr = {
 Item *
 DET_str::decryptUDF(Item * const col, Item * const ivcol) const
 {
+    // std::cout << "-------- current_thd in DET_str::decryptUDF =" << current_thd << std::endl;
     List<Item> l;
     l.push_back(col);
     l.push_back(get_key_item(rawkey));
+
     return new (current_thd->mem_root) Item_func_udf_str(&u_decDETStr, l);
 
 }
@@ -1354,6 +1366,7 @@ OPE_str::newCreateField(const Create_field &cf,
 Item *
 OPE_str::encrypt(const Item &ptext, uint64_t IV) const
 {
+    // std::cout << "-------- current_thd in OPE_str::encrypt =" << current_thd << std::endl;
     std::string ps = toUpperCase(ItemToString(ptext));
     if (ps.size() < plain_size)
         ps = ps + std::string(plain_size - ps.size(), 0);
@@ -1408,13 +1421,16 @@ ItemIntToZZ(const Item &ptext)
 static Item *
 ZZToItemInt(const ZZ &val)
 {
+    // std::cout << "-------- current_thd in ZZToItemInt =" << current_thd << std::endl;
     const ulonglong v = uint64FromZZ(val);
+
     return new (current_thd->mem_root) Item_int(v);
 }
 
 static Item *
 ZZToItemStr(const ZZ &val)
 {
+    // std::cout << "-------- current_thd in ZZToItemStr =" << current_thd << std::endl;
     const std::string &str = StringFromZZ(val);
     Item * const newit =
         new (current_thd->mem_root) Item_string(make_thd_string(str),
@@ -1514,6 +1530,7 @@ static udf_func u_sum_f = {
 Item *
 HOM::sumUDA(Item *const expr) const
 {
+    // std::cout << "-------- current_thd in HOM::sumUDA =" << current_thd << std::endl;
     if (true == waiting) {
         this->unwait();
     }
@@ -1521,12 +1538,14 @@ HOM::sumUDA(Item *const expr) const
     List<Item> l;
     l.push_back(expr);
     l.push_back(ZZToItemStr(sk->hompubkey()));
+
     return new (current_thd->mem_root) Item_func_udf_str(&u_sum_a, l);
 }
 
 Item *
 HOM::sumUDF(Item *const i1, Item *const i2) const
 {
+    // std::cout << "-------- current_thd in HOM::sumUDF =" << current_thd << std::endl;
     if (true == waiting) {
         this->unwait();
     }
@@ -1707,6 +1726,7 @@ Create_field *
 PlainText::newCreateField(const Create_field &cf,
                           const std::string &anonname) const
 {
+    // std::cout << "-------- current_thd in PlainText::newCreateField =" << current_thd << std::endl;
     const THD * const thd = current_thd;
     Create_field * const f0 = cf.clone(thd->mem_root);
     if (anonname.size() > 0) {

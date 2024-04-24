@@ -25,6 +25,7 @@
 //copies any data structure shallowly
 template <typename T>
 T *copyWithTHD(const T *const x) {
+    // std::cout << "-------- current_thd in copyWithTHD =" << current_thd << std::endl;
     return static_cast<T *>(current_thd->memdup(x, sizeof(T)));
 }
 
@@ -92,6 +93,7 @@ namespace RiboldMYSQL {
 template <typename T>
 SQL_I_List<T> *
 oneElemListWithTHD(T *const elem) {
+    // std::cout << "-------- current_thd in oneElemListWithTHD =" << current_thd << std::endl;
     SQL_I_List<T> *const res = new (current_thd->mem_root) SQL_I_List<T>();
     res->elements = 1;
     res->first = elem;
@@ -104,6 +106,7 @@ template <typename T>
 List<T> *
 dptrToListWithTHD(T **const es, unsigned int count)
 {
+    // std::cout << "-------- current_thd in dptrToListWithTHD =" << current_thd << std::endl;
     List<T> *const out = new (current_thd->mem_root) List<T>();
     for (unsigned int i = 0; i < count; ++i) {
         out->push_back(es[i]);
@@ -149,6 +152,7 @@ accumList(List_iterator<Type> it,
 
 template <typename T> List<T> *
 vectorToListWithTHD(std::vector<T *> v) {
+    // std::cout << "-------- current_thd in vectorToListWithTHD =" << current_thd << std::endl;
     List<T> *const lst = new (current_thd->mem_root) List<T>;
     for (auto it : v) {
         lst->push_back(it);

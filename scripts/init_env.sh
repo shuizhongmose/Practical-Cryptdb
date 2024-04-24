@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-pkill -9 mysql-proxy
 pkill -9 sysbench
+pkill -9 mysql-proxy
 
 netstat -pntl | grep 3307
 

@@ -187,6 +187,7 @@ void printrawReturnValue(rawReturnValue & cur) {
 //helper function for transforming the rawReturnValue
 static Item_null *
 make_null(const std::string &name = ""){
+    // std::cout << "-------- current_thd in make_null =" << current_thd << std::endl;
     char *const n = current_thd->strdup(name.c_str());
     return new Item_null(n);
 }

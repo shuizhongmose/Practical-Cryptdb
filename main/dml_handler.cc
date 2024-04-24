@@ -919,6 +919,7 @@ handleUpdateType(SIMPLE_UPDATE_TYPE update_type, const EncSet &es,
                         [&fm, &a] (const Item_field &)
                 {
                     const salt_type salt = a.salts[&fm];
+                    // std::cout << "-------- current_thd in handleUpdateType =" << current_thd << std::endl;
                     return new (current_thd->mem_root)
                                Item_int(static_cast<ulonglong>(salt));
                 });

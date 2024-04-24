@@ -145,12 +145,15 @@ Connect::execute(const std::string &query, std::unique_ptr<DBResult> *res,
             *res = nullptr;
         }
     }
-
     if (thread_ps) {
+        // std::cout << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in Connect::execute" << std::endl;
         thread_ps->safeCreateEmbeddedTHD();
-    } else {
-        assert(create_embedded_thd(0));
-    }
+    } 
+    // DELETE: 发现没什么用，删掉也不影响性能
+    // else {
+    //     assert(create_embedded_thd(0));
+    //     std::cout << "======== current_thd in Connect::execute =" << current_thd << std::endl;
+    // }
 
     return success;
 }

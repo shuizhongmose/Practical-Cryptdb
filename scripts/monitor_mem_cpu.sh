@@ -12,7 +12,7 @@ touch "$LOG_FILE"
 # 开始循环，每隔一定时间收集一次信息
 while true; do
   # 不存在mysql-proxy 则退出
-  if ! pgrep -x "mysql-proxy" > /dev/null; then
+  if ! pgrep -x "sysbench" > /dev/null; then
     exit
   fi
   # 获取当前日期和时间
