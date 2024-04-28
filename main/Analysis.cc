@@ -454,31 +454,26 @@ ProxyState::safeCreateEmbeddedTHD()
 {
     //THD is created by new, so there is no Lex or other things in it.    
     THD *thd = static_cast<THD *>(create_embedded_thd(0));
-    // std::cout << "+++++++ current_thd in ProxyState::safeCreateEmbeddedTHD =" << current_thd << std::endl;
-    assert(thd);
+    LOG(debug) << "+++++++ current_thd in ProxyState::safeCreateEmbeddedTHD =" << current_thd;
     thds.push_back(std::unique_ptr<THD,
                                    void (*)(THD *)>(thd,
                                        &embeddedTHDCleanup));
 
-    // std::cout << "++++++++ thread_count after safeCreateEmbeddedTHD = " << thread_count << std::endl;
+    LOG(debug) << "++++++++ thread_count after safeCreateEmbeddedTHD = " << thread_count;
     return;
 }
 
 void ProxyState::dumpTHDs()
 {
-    // DELETE：thds.clear()即可清理线程信息了
+    // // DELETE: thds.clear()即可清理线程信息了，并且it.release() 会释放内存管理权限，还会造成泄露
     // for (auto &it: thds) {
-    //     auto ptr = it.get();
-    //     std::cout << "+++++++ close thread (" << ptr << ") in ProxyState::dumpTHDs" << std::endl;
     //     // it.release();
-    //     unlink_thd(ptr);
     // }
-    // std::cout << "+++++++ close ("<< thds.size() <<") threads in ProxyState::dumpTHDs" << std::endl;
     thds.clear();
 
     assert(thds.empty() && "thds is not empty after clear");
     
-    // std::cout << ">>>>>>>> thread_count after dumpTHDS = " << thread_count << std::endl;
+    LOG(debug) << ">>>>>>>> thread_count after dumpTHDS = " << thread_count;
 }
 
 std::string Delta::tableNameFromType(TableType table_type) const {

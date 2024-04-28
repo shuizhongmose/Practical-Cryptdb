@@ -48,7 +48,7 @@ class cryptdb_logger : public std::stringstream {
     ~cryptdb_logger()
     {
         if (enable_mask & m)
-            std::cerr << file << ":" << line
+            std::cout << file << ":" << line
                       << " (" << func << "): "
                       << str() << std::endl;
     }

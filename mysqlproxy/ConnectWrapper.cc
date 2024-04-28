@@ -104,7 +104,7 @@ returnResultSet(lua_State *L, const ResType &res);
 static Item_null *
 make_null(const std::string &name = "")
 {
-    // std::cout << ">>>>>>>>>>> current_thd in ConnectWrapper.cc/make_null =" << current_thd << std::endl;
+    LOG(debug) << ">>>>>>>>>>> current_thd in ConnectWrapper.cc/make_null =" << current_thd;
     char *const n = current_thd->strdup(name.c_str());
     return new Item_null(n);
 }
@@ -125,7 +125,7 @@ xlua_pushlstring(lua_State *const l, const std::string &s)
 
 static int
 connect(lua_State *const L) {
-    // std::cout << ">>>>>>>>>>> current_thd in connect =" << current_thd << std::endl;
+    LOG(debug)  << ">>>>>>>>>>> current_thd in connect =" << current_thd;
 //TODO: added, why test here?
     assert(test64bitZZConversions());
 
@@ -218,7 +218,7 @@ connect(lua_State *const L) {
     // if such is even possible...
     clients[client]->ps =
         std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
-    // std::cout << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in mysqlproxy/ConnectWrapper.cc/connect()" << std::endl;
+    LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in mysqlproxy/ConnectWrapper.cc/connect()";
     clients[client]->ps->safeCreateEmbeddedTHD();
 
     return 0;
@@ -254,7 +254,7 @@ rewrite(lua_State *const L) {
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
 
-    // std::cout << ">>>>>>>>>> current_thd in rewrite =" << current_thd << std::endl;
+    LOG(debug) << ">>>>>>>>>> current_thd in rewrite =" << current_thd;
          
     const std::string client = xlua_tolstring(L, 1);
     if (clients.find(client) == clients.end()) {
@@ -416,7 +416,7 @@ parseReturnMeta(const ReturnMeta & rtm){
 
 static int
 next(lua_State *const L) {
-    // std::cout << "++++++++ current_thd in next =" << current_thd << std::endl;
+    LOG(debug) << "++++++++ current_thd in next =" << current_thd;
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
     //查找client
@@ -436,7 +436,7 @@ next(lua_State *const L) {
     assert(EXECUTE_QUERIES);
     ProxyState *const ps = thread_ps = c_wrapper->ps.get();
     assert(ps);
-    // std::cout << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in mysqlproxy/ConnectWrapper.cc/next()" << std::endl;
+    LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in mysqlproxy/ConnectWrapper.cc/next()";
     ps->safeCreateEmbeddedTHD();
 
     const ResType &res = getResTypeFromLuaTable(L, 2, 3, 4, 5, 6);
@@ -484,6 +484,7 @@ next(lua_State *const L) {
             nilBuffer(L, 3);
             // ADD: 返回结果后清空相关线程信息
             ps->dumpTHDs();
+            
             return 5;
         }
         case AbstractQueryExecutor::ResultType::RESULTS: {

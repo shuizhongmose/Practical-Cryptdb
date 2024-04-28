@@ -233,7 +233,7 @@ rewrite_create_field(const FieldMeta * const fm,
 
     // create salt column
     if (fm->getHasSalt()) {
-        // std::cout << "-------- current_thd in rewrite_create_field =" << current_thd << std::endl;
+        LOG(debug) << "-------- current_thd in rewrite_create_field =" << current_thd;;
         THD * const thd         = current_thd;
         Create_field * const f0 = f->clone(thd->mem_root);
         f0->field_name          = thd->strdup(fm->getSaltName().c_str());
@@ -355,7 +355,7 @@ only rewrite normal keys here, do not process foreign keys.
 static std::vector<Key *>
 rewrite_key1(const TableMeta &tm, const Key &key, const Analysis &a){
 
-    // std::cout << "-------- current_thd in rewrite_key1 =" << current_thd << std::endl;
+    LOG(debug) << "-------- current_thd in rewrite_key1 =" << current_thd;;
     //leave foreign key unchanged
     std::vector<Key *> output_keys;
     if(key.type==Key::FOREIGN_KEY){
@@ -460,7 +460,7 @@ highLevelRewriteForeignKey(const TableMeta &tm, const LEX &seed_lex,
              List_iterator<Key>(out_lex->alter_info.key_list);
     std::vector<Key *> output_keys;
 
-    // std::cout << "-------- current_thd in highLevelRewriteForeignKey =" << current_thd << std::endl;
+    LOG(debug) << "-------- current_thd in highLevelRewriteForeignKey =" << current_thd;;
     while(auto cur = it++){
         if(cur->type== Key::FOREIGN_KEY){
            THD* cthd = current_thd;

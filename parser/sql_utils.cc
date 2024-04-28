@@ -37,12 +37,11 @@ init_mysql(const string &embed_db){
     assert(0 == mysql_library_init(sizeof(mysql_av)/sizeof(mysql_av[0]),
                                   (char**) mysql_av, 0));
     assert(0 == mysql_thread_init());
-    std::cout << ">>>> call mysql_thread_init at sql_utils.cc line 39" << std::endl;
 }
 
 char *
 make_thd_string(const string &s, size_t *lenp){
-    // std::cout << "-------- current_thd in make_thd_string =" << current_thd << std::endl;
+    LOG(debug) << "-------- current_thd in make_thd_string =" << current_thd;
     THD *thd = current_thd;
     assert(thd);
     if (lenp)

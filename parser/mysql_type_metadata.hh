@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <memory>
+#include <util/cryptdb_log.hh>
 
 enum class signage {SIGNED, UNSIGNED};
 

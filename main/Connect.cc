@@ -146,13 +146,12 @@ Connect::execute(const std::string &query, std::unique_ptr<DBResult> *res,
         }
     }
     if (thread_ps) {
-        // std::cout << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in Connect::execute" << std::endl;
+        LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in Connect::execute";
         thread_ps->safeCreateEmbeddedTHD();
     } 
     // DELETE: 发现没什么用，删掉也不影响性能
     // else {
     //     assert(create_embedded_thd(0));
-    //     std::cout << "======== current_thd in Connect::execute =" << current_thd << std::endl;
     // }
 
     return success;
@@ -165,6 +164,7 @@ bool
 Connect::execute(const std::string &query, bool multiple_resultsets)
 {
     std::unique_ptr<DBResult> aux;
+    LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in Connect::execute 2";
     const bool r = execute(query, &aux, multiple_resultsets);
     return r && aux->getSuccess();
 }
