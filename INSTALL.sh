@@ -4,8 +4,9 @@ sudo apt-get update -y
 sudo apt-get remove bison libbison-dev -y
 sudo apt-get upgrade -y
 sudo apt-get install gcc-4.7 g++-4.7 gawk liblua5.1-0-dev libntl-dev libmysqlclient-dev libssl-dev libbsd-dev libevent-dev libglib2.0-dev libgmp-dev mysql-server libaio-dev automake gtk-doc-tools flex cmake libncurses5-dev make ruby lua5.1 libmysqld-dev exuberant-ctags cscope -y
-cd packages;sudo dpkg -i libbison-dev_2.7.1.dfsg-1_amd64.deb;sudo dpkg -i bison_2.7.1.dfsg-1_amd64.deb;cd ..
-
+sudo apt-get install m4 -y
+cd packages;sudo dpkg -i libbison-dev_2.7.1.dfsg-1_amd64.deb; sudo dpkg -i bison_2.7.1.dfsg-1_amd64.deb; cd ..
+sudo apt-get install build-essential -y
 
 echo =============COMPILE MYSQL================================
 

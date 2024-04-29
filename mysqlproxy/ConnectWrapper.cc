@@ -250,11 +250,11 @@ disconnect(lua_State *const L) {
 
 static int
 rewrite(lua_State *const L) {
+    LOG(debug) << ">>>>>>>>>> current_thd in rewrite =" << current_thd;
     ANON_REGION(__func__, &perf_cg);
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
 
-    LOG(debug) << ">>>>>>>>>> current_thd in rewrite =" << current_thd;
          
     const std::string client = xlua_tolstring(L, 1);
     if (clients.find(client) == clients.end()) {

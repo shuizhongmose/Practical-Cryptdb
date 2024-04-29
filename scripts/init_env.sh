@@ -1,10 +1,10 @@
 #!/bin/bash
 
 
-pkill -9 sysbench
-pkill -9 mysql-proxy
+sudo pkill -9 sysbench
+sudo pkill -9 mysql-proxy
 
-netstat -pntl | grep 3307
+sudo netstat -pntl | grep 3307
 
 sleep 2
 
