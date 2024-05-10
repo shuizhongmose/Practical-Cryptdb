@@ -26,7 +26,7 @@ void
 query_parse::cleanup(){
     if (t) {
         // ADD: cleanup lex and thread mem_root etc.
-        LOG(debug) << "-------- close current_thd (" << current_thd << ") in query_parse::cleanup";
+        // LOG(debug) << "-------- close current_thd (" << current_thd << ") in query_parse::cleanup";
         LEX *lex= t->lex;
         t->lex->unit.cleanup();
         t->end_statement();
@@ -88,7 +88,7 @@ query_parse::query_parse(const std::string &db, const std::string &q)
 {
     assert(create_embedded_thd(0));
     //类内自带的THD* t结构.
-    LOG(debug) << "-------- current_thd in query_parse::query_parse =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in query_parse::query_parse =" << current_thd;;
     t = current_thd;
     assert(t != NULL);
 

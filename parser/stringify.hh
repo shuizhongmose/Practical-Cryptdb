@@ -100,7 +100,7 @@ operator<<(std::ostream &out, List<T> &l)
 static inline std::ostream&
 operator<<(std::ostream &out, const SELECT_LEX &select_lex)
 {
-    LOG(debug) << "-------- current_thd in operator<<(std::ostream &out, const SELECT_LEX &select_lex) =" << current_thd;
+    // LOG(debug) << "-------- current_thd in operator<<(std::ostream &out, const SELECT_LEX &select_lex) =" << current_thd;
     // TODO(stephentu): mysql's select print is
     // missing some parts, like procedure, into outfile,
     // for update, and lock in share mode
@@ -325,7 +325,7 @@ nullAccomodationConvertLexStr(const LEX_STRING &l)
 inline LEX_STRING
 string_to_lex_str(const std::string &s)
 {
-    LOG(debug) << "-------- current_thd in string_to_lex_str =" << current_thd;
+    // LOG(debug) << "-------- current_thd in string_to_lex_str =" << current_thd;
     char *const cstr = current_thd->strdup(s.c_str());
     return LEX_STRING({cstr, s.length()});
 }
@@ -413,7 +413,7 @@ operator<<(std::ostream &out, Key &k)
 static void
 do_create_table(std::ostream &out, LEX &lex)
 {
-    LOG(debug) << "-------- current_thd in do_create_table =" << current_thd;
+    // LOG(debug) << "-------- current_thd in do_create_table =" << current_thd;
     assert(lex.sql_command == SQLCOM_CREATE_TABLE);
 
     THD *t = current_thd;
@@ -633,7 +633,7 @@ static std::string process_foreign_key(LEX &lex){
 static inline std::ostream&
 operator<<(std::ostream &out, LEX &lex)
 {
-    LOG(debug) << "-------- current_thd in operator<<(std::ostream &out, LEX &lex) =" << current_thd;
+    // LOG(debug) << "-------- current_thd in operator<<(std::ostream &out, LEX &lex) =" << current_thd;
     String s;
     THD *t = current_thd;
 

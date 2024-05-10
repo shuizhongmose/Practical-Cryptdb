@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# set -e
 
 sudo pkill -9 sysbench
 sudo pkill -9 mysql-proxy

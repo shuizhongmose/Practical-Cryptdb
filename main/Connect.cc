@@ -103,7 +103,7 @@ Connect::execute(const std::string &query, std::unique_ptr<DBResult> *res,
 {
     //silently ignore empty queries
     if (query.length() == 0) {
-        LOG(debug) << "empty query";
+        // LOG(debug) << "empty query";
         *res = nullptr;
         return true;
     }
@@ -146,8 +146,8 @@ Connect::execute(const std::string &query, std::unique_ptr<DBResult> *res,
         }
     }
     if (thread_ps) {
-        LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in Connect::execute";
         thread_ps->safeCreateEmbeddedTHD();
+        // LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in Connect::execute, current_thd=" << current_thd;
     } 
     // DELETE: 发现没什么用，删掉也不影响性能
     // else {
@@ -164,7 +164,6 @@ bool
 Connect::execute(const std::string &query, bool multiple_resultsets)
 {
     std::unique_ptr<DBResult> aux;
-    LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in Connect::execute 2";
     const bool r = execute(query, &aux, multiple_resultsets);
     return r && aux->getSuccess();
 }

@@ -41,7 +41,7 @@ init_mysql(const string &embed_db){
 
 char *
 make_thd_string(const string &s, size_t *lenp){
-    LOG(debug) << "-------- current_thd in make_thd_string =" << current_thd;
+    // LOG(debug) << "-------- current_thd in make_thd_string =" << current_thd;
     THD *thd = current_thd;
     assert(thd);
     if (lenp)

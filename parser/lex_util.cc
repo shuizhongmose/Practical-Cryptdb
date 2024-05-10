@@ -8,7 +8,7 @@ using namespace std;
 Item_string *
 dup_item(const Item_string &i)
 {
-    LOG(debug) << "-------- current_thd in parser/lex_util.cc/string dup_item =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/string dup_item =" << current_thd;;
     assert(i.type() == Item::Type::STRING_ITEM);
     const std::string s = ItemToString(i);
     return new (current_thd->mem_root) Item_string(make_thd_string(s),
@@ -19,7 +19,7 @@ dup_item(const Item_string &i)
 Item_int *
 dup_item(const Item_int &i)
 {
-    LOG(debug) << "-------- current_thd in parser/lex_util.cc/int dup_item =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/int dup_item =" << current_thd;;
     assert(i.type() == Item::Type::INT_ITEM);
     return new (current_thd->mem_root) Item_int(i.value);
 }
@@ -27,7 +27,7 @@ dup_item(const Item_int &i)
 Item_null *
 dup_item(const Item_null &i)
 {
-    LOG(debug) << "-------- current_thd in parser/lex_util.cc/null dup_item =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/null dup_item =" << current_thd;;
     assert(i.type() == Item::Type::NULL_ITEM);
     return new (current_thd->mem_root) Item_null(i.name);
 }
@@ -35,7 +35,7 @@ dup_item(const Item_null &i)
 Item_func *
 dup_item(const Item_func &i)
 {
-    LOG(debug) << "-------- current_thd in parser/lex_util.cc/func dup_item =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/func dup_item =" << current_thd;;
     assert(i.type() == Item::Type::FUNC_ITEM);
     switch (i.functype()) {
         case Item_func::Functype::NEG_FUNC:
@@ -57,7 +57,7 @@ dup_item(const Item_decimal &i)
 Item_float *
 dup_item(const Item_float &i)
 {
-    LOG(debug) << "-------- current_thd in parser/lex_util.cc/float dup_item =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/float dup_item =" << current_thd;;
     assert(i.type() == Item::Type::REAL_ITEM);
     return new (current_thd->mem_root) Item_float(i.name, i.value,
                                                 i.decimals, i.max_length);
@@ -66,7 +66,7 @@ dup_item(const Item_float &i)
 Item_field *
 dup_item(const Item_field &i)
 {
-    LOG(debug) << "-------- current_thd in parser/lex_util.cc/field dup_item =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/field dup_item =" << current_thd;;
     return new Item_field(current_thd, &const_cast<Item_field &>(i));
 }
 
@@ -114,7 +114,7 @@ make_item_field(const Item_field &i, const std::string &table_name,
 {
     assert(i.type() == Item::Type::FIELD_ITEM);
 
-    LOG(debug) << "-------- current_thd in parser/lex_util.cc/make_item_field =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/make_item_field =" << current_thd;;
     assert(current_thd);
 
     Item_field *const i0 =
@@ -134,7 +134,7 @@ make_item_ref(const Item_ref &i, Item *const new_ref,
     assert(i.type() == Item::Type::REF_ITEM);
     assert(field_name.size() > 0 && table_name.size() > 0);
 
-    LOG(debug) << "-------- current_thd in parser/lex_util.cc/make_item_ref =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/make_item_ref =" << current_thd;;
     assert(current_thd);
 
     Item_ref *const i0 =
@@ -157,7 +157,7 @@ Item_insert_value *
 make_item_insert_value(const Item_insert_value &i,
                        Item_field *const field)
 {
-    LOG(debug) << "-------- current_thd in parser/lex_util.cc/make_item_insert_value =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/make_item_insert_value =" << current_thd;;
     assert(isItem_insert_value(i));
     return new (current_thd->mem_root)
                Item_insert_value(i.context, field);
@@ -166,7 +166,7 @@ make_item_insert_value(const Item_insert_value &i,
 Item_string *
 make_item_string(const std::string &s)
 {
-    LOG(debug) << "-------- current_thd in parser/lex_util.cc/make_item_string =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/make_item_string =" << current_thd;;
     return new (current_thd->mem_root) Item_string(make_thd_string(s),
                                                    s.length(),
                                                 Item::default_charset());
@@ -175,7 +175,7 @@ make_item_string(const std::string &s)
 ORDER *
 make_order(const ORDER *const old_order, Item *const i)
 {
-    LOG(debug) << "-------- current_thd in parser/lex_util.cc/make_order =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/make_order =" << current_thd;;
     ORDER *const new_order =
         static_cast<ORDER *>(current_thd->calloc(sizeof(ORDER)));
     memcpy(new_order, old_order, sizeof(ORDER));

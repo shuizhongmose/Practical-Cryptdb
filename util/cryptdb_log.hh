@@ -4,6 +4,7 @@
 #include <sstream>
 #include <map>
 #include <string>
+#include <time.h>
 
 #define LOG_GROUPS(m)       \
     m(warn)                 \
@@ -47,10 +48,23 @@ class cryptdb_logger : public std::stringstream {
 
     ~cryptdb_logger()
     {
-        if (enable_mask & m)
-            std::cout << file << ":" << line
-                      << " (" << func << "): "
+
+        if (enable_mask & m) {
+            
+            time_t t;  //秒时间
+            tm* local; //本地时间 
+            char buf[128]= {0};
+            
+            t = time(NULL); //获取目前秒时间
+            local = localtime(&t); //转为本地时间
+            strftime(buf, 64, "%Y-%m-%d %H:%M:%S", local);
+            
+            // Output the log entry with current date and time
+            std::cout << buf << " - " // Use put_time to format the datetime
+                      << file << ":" << line << " (" << func << "): " 
                       << str() << std::endl;
+        }
+
     }
 
     static void

@@ -447,6 +447,7 @@ embeddedTHDCleanup(THD *thd)
     //       ilink::unlink()
     // free_root(thd->main_mem_root, 0) is called in THD::~THD
     delete thd;
+    thd = nullptr;
 }
 
 void
@@ -454,12 +455,11 @@ ProxyState::safeCreateEmbeddedTHD()
 {
     //THD is created by new, so there is no Lex or other things in it.    
     THD *thd = static_cast<THD *>(create_embedded_thd(0));
-    LOG(debug) << "+++++++ current_thd in ProxyState::safeCreateEmbeddedTHD =" << current_thd;
+    // LOG(debug) << "+++++++ current_thd in ProxyState::safeCreateEmbeddedTHD =" << current_thd;
     thds.push_back(std::unique_ptr<THD,
                                    void (*)(THD *)>(thd,
                                        &embeddedTHDCleanup));
 
-    LOG(debug) << "++++++++ thread_count after safeCreateEmbeddedTHD = " << thread_count;
     return;
 }
 
@@ -467,13 +467,16 @@ void ProxyState::dumpTHDs()
 {
     // // DELETE: thds.clear()即可清理线程信息了，并且it.release() 会释放内存管理权限，还会造成泄露
     // for (auto &it: thds) {
-    //     // it.release();
+    //     // THD* raw_ptr = it.release();
+    //     // // LOG(debug) << "clear thread ("<< raw_ptr <<") in dumpTHDs";
+    //     // LOG(debug) << "clear thread ("<< it.get() <<") in dumpTHDs";
+    //     // embeddedTHDCleanup(raw_ptr);
     // }
     thds.clear();
 
     assert(thds.empty() && "thds is not empty after clear");
     
-    LOG(debug) << ">>>>>>>> thread_count after dumpTHDS = " << thread_count;
+    // LOG(debug) << ">>>>>>>> thread_count after dumpTHDS = " << thread_count;
 }
 
 std::string Delta::tableNameFromType(TableType table_type) const {

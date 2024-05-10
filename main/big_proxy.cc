@@ -88,7 +88,7 @@ void printrawReturnValue(rawReturnValue & cur) {
 //helper function for transforming the rawReturnValue
 static Item_null *
 make_null(const std::string &name = ""){
-    LOG(debug) << "-------- current_thd in big_proxy make_null =" << current_thd;
+    // LOG(debug) << "-------- current_thd in big_proxy make_null =" << current_thd;
     char *const n = current_thd->strdup(name.c_str());
     return new Item_null(n);
 }
@@ -167,7 +167,7 @@ big_proxy::big_proxy(std::string db){
         assert(0 == mysql_thread_init());
         //we init embedded database here.
         clients[client]->ps = std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
-        LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in big_proxy::big_proxy";
+        // LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in big_proxy::big_proxy";
         clients[client]->ps->safeCreateEmbeddedTHD();
         //Connect end!!
         globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
@@ -181,7 +181,7 @@ void big_proxy::myNext(std::string client,bool isFirst,ResType inRes) {
     WrapperState *const c_wrapper = clients[client];
     ProxyState *const ps = c_wrapper->ps.get();
     assert(ps);
-    LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in big_proxy::myNext";
+    // LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in big_proxy::myNext";
     ps->safeCreateEmbeddedTHD();
    
     const ResType &res = inRes;

@@ -23,7 +23,7 @@ template <enum enum_field_types id>
 Item *
 MySQLIntegerMetaData<id>::intoItem(const std::string &value) const
 {
-    LOG(debug) << "-------- current_thd in MySQLIntegerMetaData<id>::intoItem =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in MySQLIntegerMetaData<id>::intoItem =" << current_thd;;
     return new (current_thd->mem_root)
         Item_int(static_cast<long long>(valFromStr(value)));
 }
@@ -162,7 +162,7 @@ template <enum enum_field_types id>
 Item *
 AbstractMySQLDecimalMetaData<id>::intoItem(const std::string &value) const
 {
-    LOG(debug) << "-------- current_thd in AbstractMySQLDecimalMetaData<id>::intoItem =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in AbstractMySQLDecimalMetaData<id>::intoItem =" << current_thd;;
     return new (current_thd->mem_root)
         Item_string(make_thd_string(value), value.length(),
                     &my_charset_bin);
@@ -177,7 +177,7 @@ template <enum enum_field_types id>
 Item *
 AbstractMySQLFloatMetaData<id>::intoItem(const std::string &value) const
 {
-    LOG(debug) << "-------- current_thd in AbstractMySQLFloatMetaData<id>::intoItem =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in AbstractMySQLFloatMetaData<id>::intoItem =" << current_thd;;
     return new (current_thd->mem_root)
         Item_float(value.c_str(), value.size());
 }
@@ -247,7 +247,7 @@ template <enum enum_field_types id>
 Item *
 AbstractMySQLStringMetaData<id>::intoItem(const std::string &value) const
 {
-    LOG(debug) << "-------- current_thd in AbstractMySQLStringMetaData<id>::intoItem =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in AbstractMySQLStringMetaData<id>::intoItem =" << current_thd;;
     return new (current_thd->mem_root)
         Item_string(make_thd_string(value), value.length(),
                     &my_charset_bin);
@@ -290,7 +290,7 @@ template <enum enum_field_types id>
 Item *
 AbstractMySQLDateMetaData<id>::intoItem(const std::string &value) const
 {
-    LOG(debug) << "-------- current_thd in AbstractMySQLDateMetaData<id>::intoItem =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in AbstractMySQLDateMetaData<id>::intoItem =" << current_thd;;
     return new (current_thd->mem_root)
         Item_string(make_thd_string(value), value.length(),
                     &my_charset_bin);
@@ -305,7 +305,7 @@ AbstractMySQLDateMetaData<id>::intoItem(const std::string &value) const
 Item *
 MySQLEnumMetaData::intoItem(const std::string &value) const
 {
-    LOG(debug) << "-------- current_thd in MySQLEnumMetaData<id>::intoItem =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in MySQLEnumMetaData<id>::intoItem =" << current_thd;;
     return new (current_thd->mem_root)
         Item_string(make_thd_string(value), value.length(),
                     &my_charset_bin);
@@ -333,7 +333,7 @@ template <enum enum_field_types id>
 Item *
 AbstractMySQLBlobMetaData<id>::intoItem(const std::string &value) const
 {
-    LOG(debug) << "-------- current_thd in AbstractMySQLBlobMetaData<id>::intoItem =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in AbstractMySQLBlobMetaData<id>::intoItem =" << current_thd;;
     return new (current_thd->mem_root)
         Item_string(make_thd_string(value), value.length(),
                     &my_charset_bin);

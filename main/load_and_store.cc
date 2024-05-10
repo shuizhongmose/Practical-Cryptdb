@@ -167,7 +167,7 @@ rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
 
 static Item_null *
 make_null(const std::string &name = ""){
-    LOG(debug) << "-------- current_thd in load_and_store.cc/make_null =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in load_and_store.cc/make_null =" << current_thd;;
     char *const n = current_thd->strdup(name.c_str());
     return new Item_null(n);
 }
@@ -779,7 +779,7 @@ static void init(){
     assert(0 == mysql_thread_init());
     //we init embedded database here.
     clients[client]->ps = std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
-    LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in main/load_and_store.cc/init()";
+    // LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in main/load_and_store.cc/init()";
     clients[client]->ps->safeCreateEmbeddedTHD();
     //Connect end!!
     globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);

@@ -104,7 +104,7 @@ returnResultSet(lua_State *L, const ResType &res);
 static Item_null *
 make_null(const std::string &name = "")
 {
-    LOG(debug) << ">>>>>>>>>>> current_thd in ConnectWrapper.cc/make_null =" << current_thd;
+    // LOG(debug) << ">>>>>>>>>>> current_thd in ConnectWrapper.cc/make_null =" << current_thd;
     char *const n = current_thd->strdup(name.c_str());
     return new Item_null(n);
 }
@@ -125,7 +125,7 @@ xlua_pushlstring(lua_State *const l, const std::string &s)
 
 static int
 connect(lua_State *const L) {
-    LOG(debug)  << ">>>>>>>>>>> current_thd in connect =" << current_thd;
+    // LOG(debug)  << ">>>>>>>>>>> current_thd in connect =" << current_thd;
 //TODO: added, why test here?
     assert(test64bitZZConversions());
 
@@ -218,7 +218,7 @@ connect(lua_State *const L) {
     // if such is even possible...
     clients[client]->ps =
         std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
-    LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in mysqlproxy/ConnectWrapper.cc/connect()";
+    // LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in mysqlproxy/ConnectWrapper.cc/connect()";
     clients[client]->ps->safeCreateEmbeddedTHD();
 
     return 0;
@@ -226,6 +226,7 @@ connect(lua_State *const L) {
 
 static int
 disconnect(lua_State *const L) {
+    // LOG(debug)  << ">>>>>>>>>>> current_thd in disconnect =" << current_thd;
     ANON_REGION(__func__, &perf_cg);
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
@@ -250,7 +251,7 @@ disconnect(lua_State *const L) {
 
 static int
 rewrite(lua_State *const L) {
-    LOG(debug) << ">>>>>>>>>> current_thd in rewrite =" << current_thd;
+    // LOG(debug) << ">>>>>>>>>> current_thd in rewrite =" << current_thd;
     ANON_REGION(__func__, &perf_cg);
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
@@ -284,13 +285,18 @@ rewrite(lua_State *const L) {
                 ps->getSchemaInfo();
             c_wrapper->schema_info_refs.push_back(schema);
 
+            // ADD: 在retrieveDefaultDatabase中创建的线程没什么用，可以先清除掉？？
+            ps->dumpTHDs();
+
             //parse, rewrite, delta, adjust, returnMeta, 
             // 实现rewrite操作
             // std::unique_ptr 管理内存，会自动回收，所以不需要再进行回收
+            // LOG(debug) << "begin rewrite, current_thd=" << current_thd;
             std::unique_ptr<QueryRewrite> qr =
                 std::unique_ptr<QueryRewrite>(new QueryRewrite(
                     Rewriter::rewrite(query, *schema.get(),
                                       c_wrapper->default_db, *ps)));
+            // LOG(debug) << "done rewrite, current_thd=" << current_thd;
             assert(qr);
             c_wrapper->setQueryRewrite(std::move(qr));
         } catch (const AbstractException &e) {
@@ -416,7 +422,7 @@ parseReturnMeta(const ReturnMeta & rtm){
 
 static int
 next(lua_State *const L) {
-    LOG(debug) << "++++++++ current_thd in next =" << current_thd;
+    // LOG(debug) << "++++++++ current_thd in next =" << current_thd;
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
     //查找client
@@ -436,7 +442,7 @@ next(lua_State *const L) {
     assert(EXECUTE_QUERIES);
     ProxyState *const ps = thread_ps = c_wrapper->ps.get();
     assert(ps);
-    LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in mysqlproxy/ConnectWrapper.cc/next()";
+    // LOG(debug) << ">>>>>>>>>>>>>>>>> call safeCreateEmbeddedTHD in mysqlproxy/ConnectWrapper.cc/next()";
     ps->safeCreateEmbeddedTHD();
 
     const ResType &res = getResTypeFromLuaTable(L, 2, 3, 4, 5, 6);
@@ -450,7 +456,10 @@ next(lua_State *const L) {
 
         c_wrapper->selfKill(KillZone::Where::Before);
         // 执行rewrite操作
+        // 执行加密sql/或者解析查询结果等
+        // LOG(debug) << "begin next, current_thd =" << current_thd;
         const auto &new_results = qr->executor->next(res, nparams);
+        // LOG(debug) << "done next, current_thd =" << current_thd;
         c_wrapper->selfKill(KillZone::Where::After);
 
         const auto &result_type = new_results.first;
@@ -461,6 +470,8 @@ next(lua_State *const L) {
         }
         switch (result_type) {
         case AbstractQueryExecutor::ResultType::QUERY_COME_AGAIN: {
+            // LOG(debug) << "return again, current_thd =" << current_thd;
+            // 返回sql语句给lua脚本，执行结果再次进入该函数处理
             // more to do before we have the client's results
             xlua_pushlstring(L, "again");
             const auto &output =
@@ -475,6 +486,8 @@ next(lua_State *const L) {
             return 5;
         }
         case AbstractQueryExecutor::ResultType::QUERY_USE_RESULTS: {
+            // LOG(debug) << "return query_results, current_thd =" << current_thd;
+            // 返回sql语句给lua脚本，执行结果直接返回客户端
             // the results of executing this query should be send directly
             // back to the client
             xlua_pushlstring(L, "query-results");
@@ -488,6 +501,8 @@ next(lua_State *const L) {
             return 5;
         }
         case AbstractQueryExecutor::ResultType::RESULTS: {
+            // LOG(debug) << "return results, current_thd =" << current_thd;
+            // 返回解密结果给lua脚本，并由mysql-proxy返回给客户端
             // ready to return results to the client
             xlua_pushlstring(L, "results");
             const auto &res = new_results.second->extract<ResType>();
@@ -498,6 +513,8 @@ next(lua_State *const L) {
         }
         default:
             assert(false);
+            // ADD: 不是任何类型，代表为空是不是也可以清空线程空间？
+            ps->dumpTHDs();
         }
     } catch (const ErrorPacketException &e) {
         // lua_pop(L, lua_gettop(L));
@@ -511,6 +528,7 @@ next(lua_State *const L) {
         ps->dumpTHDs();
         return 5;
     }
+    return 5;
 }
 
 static void
