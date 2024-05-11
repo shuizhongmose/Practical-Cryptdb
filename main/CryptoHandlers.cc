@@ -1313,7 +1313,7 @@ OPE_int::encrypt(const Item &ptext, uint64_t IV) const
                      this->ciph_size);
 
 
-    return new Item_string(make_thd_string(enc_string),
+    return new (current_thd->mem_root) Item_string(make_thd_string(enc_string),
                            enc_string.length(),
                            &my_charset_bin);
 }
@@ -1659,7 +1659,7 @@ Search::encrypt(const Item &ptext, uint64_t IV) const
 
     LOG(encl) << "SEARCH encrypt " << plainstr << " --> " << ciph;
 
-    return new Item_string(newmem(ciph), ciph.length(), &my_charset_bin);
+    return new (current_thd->mem_root) Item_string(newmem(ciph), ciph.length(), &my_charset_bin);
 }
 
 Item *

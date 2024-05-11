@@ -67,7 +67,7 @@ Item_field *
 dup_item(const Item_field &i)
 {
     // LOG(debug) << "-------- current_thd in parser/lex_util.cc/field dup_item =" << current_thd;;
-    return new Item_field(current_thd, &const_cast<Item_field &>(i));
+    return new (current_thd->mem_root) Item_field(current_thd, &const_cast<Item_field &>(i));
 }
 
 Item *
