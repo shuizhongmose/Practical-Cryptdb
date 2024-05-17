@@ -32,9 +32,16 @@ LOG_GROUPS(__temp_m)
 #undef __temp_m
 };
 
+// static
+// std::map<std::string, log_group> log_name_to_group = {
+// #define __temp_m(n) { #n, log_group::log_ ## n },
+// LOG_GROUPS(__temp_m)
+// #undef __temp_m
+// };
+
 static
-std::map<std::string, log_group> log_name_to_group = {
-#define __temp_m(n) { #n, log_group::log_ ## n },
+std::map<log_group, std::string> log_group_to_name = {
+#define __temp_m(n) { log_group::log_ ## n, #n },
 LOG_GROUPS(__temp_m)
 #undef __temp_m
 };
@@ -42,7 +49,7 @@ LOG_GROUPS(__temp_m)
 class cryptdb_logger : public std::stringstream {
  public:
     cryptdb_logger(log_group g, const char *filearg, uint linearg, const char *fnarg)
-        : m(mask(g)), file(filearg), line(linearg), func(fnarg)
+        : m(mask(g)), file(filearg), line(linearg), func(fnarg), log_level(g)
     {
     }
 
@@ -59,10 +66,12 @@ class cryptdb_logger : public std::stringstream {
             local = localtime(&t); //转为本地时间
             strftime(buf, 64, "%Y-%m-%d %H:%M:%S", local);
             
+            std::stringstream temp_stream;
+            temp_stream << str();
             // Output the log entry with current date and time
             std::cout << buf << " - " // Use put_time to format the datetime
                       << file << ":" << line << " (" << func << "): " 
-                      << str() << std::endl;
+                      << "[" << log_group_to_name[log_level] << "] " << temp_stream.str() << std::endl;
         }
 
     }
@@ -117,6 +126,7 @@ class cryptdb_logger : public std::stringstream {
     const char *file;
     uint line;
     const char *func;
+    log_group log_level; // 添加log_level成员变量
 
     static uint64_t enable_mask;
 
