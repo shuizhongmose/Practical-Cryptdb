@@ -107,10 +107,15 @@ Connect::execute(const std::string &query, std::unique_ptr<DBResult> *res,
         *res = nullptr;
         return true;
     }
+    
+    if ( get_thread_id() <= 0) {
+        assert(0 == mysql_thread_init());
+    }
+
     bool success = true;
+    
     if (mysql_query(conn, query.c_str())) {
-//        LOG(warn) << "mysql_query: " << mysql_error(conn);
-        LOG(warn) << "error on query: " << query;
+        LOG(error) << "error on query: " << query;
         *res = nullptr;
         success = false;
     } else {

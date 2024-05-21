@@ -248,7 +248,7 @@ class UpdateHandler : public DMLHandler {
     {
         LEX *const new_lex = copyWithTHD(lex);
 
-        LOG(cdb_v) << "rewriting update \n";
+        // LOG(cdb_v) << "rewriting update \n";
 
         assert_s(lex->select_lex.item_list.head(),
                  "update needs to have item_list");
@@ -704,20 +704,20 @@ rewrite_select_lex(const st_select_lex &select_lex, Analysis &a)
     // rewrite_proj uses.
     st_select_lex *const new_select_lex = rewrite_filters_lex(select_lex, a);
 
-    LOG(cdb_v) << "rewrite select lex input is "
-               << select_lex << std::endl;
+    // // LOG(cdb_v) << "rewrite select lex input is "
+    //            << select_lex << std::endl;
     auto item_it =
         RiboldMYSQL::constList_iterator<Item>(select_lex.item_list);
 
     List<Item> newList;
-    int numOfItem=0;
     //item的改写, 是写到newlist里面, 所以item本身不会有变化.
     for (;;) {
 
         const Item *const item = item_it++;
         if (!item)
             break;
-        numOfItem++;
+        // // LOG(cdb_v) << "rewrite_select_lex " << *item << " with name "
+        //            << item->name << std::endl;
         rewrite_proj(*item,
                      *constGetAssert(a.rewritePlans, item).get(),
                      a, &newList);
@@ -732,7 +732,6 @@ rewrite_select_lex(const st_select_lex &select_lex, Analysis &a)
 //        std::cout<<"itemname: "<<item->name<<std::endl;
 //     }
 
-//    std::cout<<"num of item: "<<numOfItem<<std::endl;
     new_select_lex->item_list = newList;
 
     return new_select_lex;

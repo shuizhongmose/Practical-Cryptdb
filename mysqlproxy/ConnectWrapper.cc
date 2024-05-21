@@ -455,7 +455,7 @@ next(lua_State *const L) {
         NextParams nparams(*ps, c_wrapper->default_db, c_wrapper->last_query);
 
         c_wrapper->selfKill(KillZone::Where::Before);
-        // 执行rewrite操作
+        // 执行next操作
         // 执行加密sql/或者解析查询结果等
         // LOG(debug) << "begin next, current_thd =" << current_thd;
         const auto &new_results = qr->executor->next(res, nparams);

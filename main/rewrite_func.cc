@@ -273,7 +273,7 @@ class CItemCompare : public CItemSubtypeFT<Item_func, FT> {
     virtual RewritePlan *
     do_gather_type(const Item_func &i, Analysis &a) const
     {
-        LOG(cdb_v) << "CItemCompare (L1139) do_gather func " << i;
+        // LOG(cdb_v) << "CItemCompare (L1139) do_gather func " << i;
 
         std::string why;
 
@@ -315,8 +315,7 @@ class CItemCompare : public CItemSubtypeFT<Item_func, FT> {
                     const RewritePlan &rp, Analysis &a)
         const
     {
-        LOG(cdb_v) << "do_rewrite_type Item_func " << i << " constr "
-                   << EncSet(constr) << std::endl;
+        // LOG(cdb_v) << "do_rewrite_type Item_func " << i << " constr " << EncSet(constr) << std::endl;
         TEST_BadItemArgumentCount(i.type(), 2, i.argument_count());
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
@@ -516,8 +515,7 @@ class CItemAdditive : public CItemSubtypeFN<IT, NAME> {
     do_rewrite_type(const IT &i, const OLK &constr,
                     const RewritePlan &_rp, Analysis &a) const
     {
-        LOG(cdb_v) << "do_rewrite_type Item_func_additive_op"
-                   << i << std::endl;
+        // LOG(cdb_v) << "do_rewrite_type Item_func_additive_op" << i << std::endl;
 
         //rewrite children
         TEST_BadItemArgumentCount(i.type(), 2, i.argument_count());
@@ -526,7 +524,7 @@ class CItemAdditive : public CItemSubtypeFN<IT, NAME> {
         const RewritePlanWithChildren &rp =
             static_cast<const RewritePlanWithChildren &>(_rp);
 
-        LOG(cdb_v) << "Rewrite plan is " << &rp << std::endl;
+        // LOG(cdb_v) << "Rewrite plan is " << &rp << std::endl;
 
         Item *const arg0 =
             itemTypes.do_rewrite(*args[0], constr,

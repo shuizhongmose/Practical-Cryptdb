@@ -842,11 +842,11 @@ removeOnionLayer(const Analysis &a, const TableMeta &tm,
           << "    SET " << fieldanon  << " = " << *decUDF
           << ";";
 
-    std::cerr << GREEN_BEGIN << "\nADJUST: \n" << COLOR_END << terminalEscape(query.str()) << std::endl;
+    // LOG(cdb_v) << GREEN_BEGIN << "\nADJUST: \n" << COLOR_END << terminalEscape(query.str()) << std::endl;
 
     //execute decryption query
 
-    LOG(cdb_v) << "adjust onions: \n" << query.str() << std::endl;
+    // LOG(cdb_v) << "adjust onions: \n" << query.str() << std::endl;
 
     *new_level = local_new_level;
     return query.str();
@@ -922,7 +922,7 @@ decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
         out_i = (*it)->decrypt(*dec, IV);
         assert(out_i);
         dec = out_i;
-        LOG(cdb_v) << "dec okay";
+        // LOG(cdb_v) << "dec okay";
     }
 
     assert(out_i && out_i != &i);
@@ -1320,7 +1320,7 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
         try {
             executor = handler.transformLex(a, lex);
         } catch (OnionAdjustExcept e) {
-            LOG(cdb_v) << "caught onion adjustment";
+            // LOG(cdb_v) << "caught onion adjustment";
 
             //We use deltas to remove layers in the metadata, and queyrs to decrypt data.
             std::pair<std::vector<std::unique_ptr<Delta> >,
@@ -1366,7 +1366,7 @@ QueryRewrite
 Rewriter::rewrite(const std::string &q, const SchemaInfo &schema,
                   const std::string &default_db, const ProxyState &ps)
 {
-    LOG(cdb_v) << "q " << q;
+    // LOG(cdb_v) << "q " << q;
     assert(0 == mysql_thread_init());
 
     Analysis analysis(default_db, schema, ps.getMasterKey(),

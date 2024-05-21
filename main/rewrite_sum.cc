@@ -150,7 +150,7 @@ class CItemSum : public CItemSubtypeST<Item_sum_sum, SFT> {
     virtual RewritePlan *
     do_gather_type(const Item_sum_sum &i, Analysis &a) const
     {
-        LOG(cdb_v) << "gather Item_sum_sum " << i << std::endl;
+        // LOG(cdb_v) << "gather Item_sum_sum " << i << std::endl;
 
         const unsigned int arg_count = RiboldMYSQL::get_arg_count(i);
         TEST_BadItemArgumentCount(i.type(), 1, arg_count);
@@ -181,7 +181,7 @@ class CItemSum : public CItemSubtypeST<Item_sum_sum, SFT> {
         auto rp_wc = static_cast<const RewritePlanWithChildren &>(rp);
         assert(rp_wc.childr_rp.size() == 1);
 
-        LOG(cdb_v) << "Item_sum_sum rewrite " << i << std::endl;
+        // LOG(cdb_v) << "Item_sum_sum rewrite " << i << std::endl;
 
         TEST_Text(rp.es_out.contains(constr),
           "summation cannot support it's argument");
@@ -225,7 +225,7 @@ class CItemAvg : public CItemSubtypeST<Item_sum_sum, SFT> {
     virtual RewritePlan *
     do_gather_type(const Item_sum_sum &i, Analysis &a) const
     {
-        LOG(cdb_v) << "gather Item_sum_sum " << i << std::endl;
+        // LOG(cdb_v) << "gather Item_sum_sum " << i << std::endl;
 
         const unsigned int arg_count = RiboldMYSQL::get_arg_count(i);
         TEST_BadItemArgumentCount(i.type(), 1, arg_count);
@@ -295,7 +295,7 @@ static class ANON : public CItemSubtypeST<Item_sum_bit, Item_sum::Sumfunctype::S
     virtual RewritePlan *
     do_gather_type(const Item_sum_bit &i, Analysis &a) const
     {
-        /* LOG(cdb_v) << "do_a_t Item_sum_bit reason " << tr;
+        /* // LOG(cdb_v) << "do_a_t Item_sum_bit reason " << tr;
             analyze(i->get_arg(0), reason(EMPTY_EncSet, "bitagg", i, &tr, false), a);
             return tr.encset;
         */
@@ -307,7 +307,7 @@ static class ANON : public CItemSubtypeST<Item_func_group_concat, Item_sum::Sumf
     virtual RewritePlan *
     do_gather_type(const Item_func_group_concat &i, Analysis &a) const
     {
-        /*  LOG(cdb_v) << "do_a_t Item_func_group reason " << tr;
+        /*  // LOG(cdb_v) << "do_a_t Item_func_group reason " << tr;
             uint arg_count_field = i->*rob<Item_func_group_concat, uint,
                     &Item_func_group_concat::arg_count_field>::ptr();
             for (uint x = 0; x < arg_count_field; x++) {

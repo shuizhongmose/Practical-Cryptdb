@@ -213,7 +213,7 @@ std::vector<Create_field *>
 rewrite_create_field(const FieldMeta * const fm,
                      Create_field * const f, const Analysis &a)
 {
-    LOG(cdb_v) << "in rewrite create field for " << *f;
+    // LOG(cdb_v) << "in rewrite create field for " << *f;
 
     assert(fm->getChildren().size() > 0);
 

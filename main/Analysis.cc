@@ -335,7 +335,7 @@ loadUDFs(const std::unique_ptr<Connect> &conn) {
     createAll(conn);
     assert(lowLevelSetCurrentDatabase(conn, saved_db));
 
-    LOG(cdb_v) << "Loaded CryptDB's UDFs.";
+    // LOG(cdb_v) << "Loaded CryptDB's UDFs.";
 }
 
 static bool
@@ -475,7 +475,7 @@ void ProxyState::dumpTHDs()
     thds.clear();
 
     assert(thds.empty() && "thds is not empty after clear");
-    
+    mysql_thread_end();
     // LOG(debug) << ">>>>>>>> thread_count after dumpTHDS = " << thread_count;
 }
 

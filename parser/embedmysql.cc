@@ -23,22 +23,36 @@ using namespace std;
 extern "C" void *create_embedded_thd(int client_flag);
 
 void
-query_parse::cleanup(){
+query_parse::cleanup() {
     if (t) {
-        // ADD: cleanup lex and thread mem_root etc.
         // LOG(debug) << "-------- close current_thd (" << current_thd << ") in query_parse::cleanup";
-        LEX *lex= t->lex;
-        t->lex->unit.cleanup();
+
+        // 获取并清理LEX对象
+        LEX *lex = t->lex;
+        if (lex) {
+            lex->unit.cleanup();  // 清理LEX单位
+            lex->destroy_query_tables_list();  // 销毁查询表列表
+        }
+
+        // 清理语句和查询后的内容
         t->end_statement();
         t->cleanup_after_query();
-        lex->destroy_query_tables_list();
-        // 线程关闭
-        mysql_thread_end();
+
+        // 关闭线程表
         close_thread_tables(t);
+
+        // 释放事务锁
         t->mdl_context.release_transactional_locks();
-        --thread_count;
+
+        // 结束MySQL线程
+        mysql_thread_end();
+
+        // 删除THD对象
         delete t;
-        t = 0;
+        t = nullptr;  // 设置指针为nullptr防止悬空指针
+
+        // 减少线程计数
+        --thread_count;
     }
 }
 
@@ -88,8 +102,8 @@ query_parse::query_parse(const std::string &db, const std::string &q)
 {
     assert(create_embedded_thd(0));
     //类内自带的THD* t结构.
-    // LOG(debug) << "-------- current_thd in query_parse::query_parse =" << current_thd;;
     t = current_thd;
+    // LOG(debug) << "-------- current_thd in query_parse::query_parse =" << current_thd;;
     assert(t != NULL);
 
     //if first word of query is CRYPTDB, we can't use the embedded db
@@ -227,6 +241,8 @@ query_parse::query_parse(const std::string &db, const std::string &q)
                                &lex->select_lex,
                                &lex->unit))
                     throw CryptDBError("JOIN::prepare");
+                delete j;
+                j = nullptr;
             } else {
                 thrower() << "skip unions for now (union="
                           << lex->select_lex.master_unit()->is_union()
