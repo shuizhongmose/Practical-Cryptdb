@@ -475,7 +475,6 @@ void ProxyState::dumpTHDs()
     thds.clear();
 
     assert(thds.empty() && "thds is not empty after clear");
-    mysql_thread_end();
     // LOG(debug) << ">>>>>>>> thread_count after dumpTHDS = " << thread_count;
 }
 
