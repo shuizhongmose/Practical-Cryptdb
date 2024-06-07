@@ -1,3 +1,8 @@
+------------------------------------------------
+-- 该SQL运行成功需要设置`SECURE_CRYPTDB=false`
+------------------------------------------------
+
+
 -- 使用测试数据库
 CREATE DATABASE IF NOT EXISTS encrypted_db;
 USE encrypted_db;
@@ -25,7 +30,6 @@ CREATE TABLE employees (
     start_date DATE,
     department_id INT,
     bio TEXT
-    -- FOREIGN KEY (department_id) REFERENCES departments(department_id)
 );
 
 -- 插入员工数据
@@ -42,39 +46,45 @@ SELECT salary, department_id
 FROM employees
 WHERE salary > 60000;
 
+---- 查询某个员工的 First Name，测试 LIKE
+SELECT * FROM employees 
+WHERE first_name LIKE '%Jack%';
+
 ---- 选择所有部门的记录
 SELECT department_id, department_name
 FROM departments;
 
--- 联合操作，关联部门表，选择员工的薪水和部门名称
-SELECT e.employee_id, e.salary, d.department_name
-FROM employees as e, departments as d
-where e.salary > 60000
-GROUP BY e.employee_id;
+-- 关联部门表，选择员工的薪水和部门名称 → 基础功能必须实现
+SELECT employees.employee_id, employees.salary, departments.department_name
+FROM employees
+INNER JOIN departments ON employees.department_id = departments.department_id
+WHERE employees.salary > 60000;
 
 ---- 使用聚合函数AVG计算符合条件的员工的平均薪水
 SELECT AVG(e.salary) AS average_salary
-FROM employees as e, departments as d
-where e.salary > 60000
+FROM employees AS e
+JOIN departments AS d ON e.department_id = d.department_id
+WHERE e.salary > 60000
 GROUP BY d.department_name;
+
+---- 测试count、group by， order by
+SELECT department_id, COUNT(*) 
+AS num_employees 
+FROM employees 
+GROUP BY department_id 
+order by department_id;
 
 ---- 添加GROUP BY，按部门名称分组计算平均薪水
 SELECT d.department_name, AVG(e.salary) AS average_salary
-FROM employees as e, departments as d
-where e.salary > 60000;
+FROM employees AS e
+JOIN departments AS d ON e.department_id = d.department_id
+WHERE e.salary > 60000
 GROUP BY d.department_name;
 
 ---- 使用DISTINCT和ORDER BY对结果进行去重和排序
 SELECT DISTINCT d.department_name, AVG(e.salary) AS average_salary
-FROM employees as e, departments as d
-WHERE e.salary > 60000
-GROUP BY d.department_name
-ORDER BY average_salary DESC;
-
----- 复杂测试，【错误，不支持JOIN】
-SELECT DISTINCT d.department_name, AVG(e.salary) AS average_salary
-FROM employees e
-JOIN departments d ON e.department_id = d.department_id
+FROM employees AS e
+JOIN departments AS d ON e.department_id = d.department_id
 WHERE e.salary > 60000
 GROUP BY d.department_name
 ORDER BY average_salary DESC;
@@ -84,7 +94,7 @@ SELECT department_name, SUM(budget) AS total_budget
 FROM departments
 GROUP BY department_name WITH ROLLUP;
 
--- 使用LIKE操作，【错误，不支持LIKE】
+-- 使用LIKE操作，
 SELECT * FROM employees
 WHERE bio LIKE '%experience%';
 
@@ -107,11 +117,12 @@ CASE
 END AS salary_level
 FROM employees;
 
--- 使用HAVING过滤聚合结果，【错误】
-SELECT department_name, COUNT(*) AS num_employees, AVG(salary) AS avg_salary
-FROM employees as e, departments as d
-GROUP BY department_name
-HAVING avg_salary > 65000;
+-- 【错误】使用HAVING过滤聚合结果
+SELECT d.department_name, COUNT(*) AS num_employees, AVG(e.salary) AS avg_salary
+FROM employees AS e
+JOIN departments AS d ON e.department_id = d.department_id
+GROUP BY d.department_name
+HAVING AVG(e.salary) > 75000;
 
 -- 使用LIMIT获取前3个高薪员工
 SELECT first_name, last_name, salary
@@ -119,10 +130,10 @@ FROM employees
 ORDER BY salary DESC
 LIMIT 3;
 
--- 多条件查询和复杂的JOIN操作，【错误】
+-- 多条件查询和复杂的JOIN操作
 SELECT e.first_name, e.last_name, d.department_name, e.salary
 FROM employees e
-LEFT JOIN departments d ON e.department_id = d.department_id
+LEFT JOIN departments as d ON e.department_id = d.department_id
 WHERE (e.salary BETWEEN 50000 AND 90000) AND d.department_name IN ('HR', 'Development')
 ORDER BY e.salary;
 
