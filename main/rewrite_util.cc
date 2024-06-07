@@ -651,8 +651,8 @@ encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
     //这段代码体现了层次加密,也就是说, 通过IV,每个洋葱的层次通过enclayer来表示
     //直接调用其加密和解密函数, 就可以完成加密工作. 加密以后获得的是Item,最后返回加密以后的结果
     for (const auto &it : enc_layers) {
-        LOG(encl) << "encrypt layer "
-                  << TypeText<SECLEVEL>::toText(it->level()) << "\n";
+        // LOG(encl) << "encrypt layer "
+        //          << TypeText<SECLEVEL>::toText(it->level()) << "\n";
         new_enc = it->encrypt(*enc, IV);
         assert(new_enc);
         enc = new_enc;

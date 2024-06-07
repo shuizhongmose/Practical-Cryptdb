@@ -69,7 +69,7 @@ getFieldsItSelect(std::list<std::string> & words,
     std::string res = "SELECT ";
 
     if (equalsIgnoreCase(*it, "distinct")) {
-        LOG(edb_v) << "has distinct!";
+        // LOG(edb_v) << "has distinct!";
         it++;
         res += "DISTINCT ";
     }

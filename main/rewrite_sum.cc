@@ -65,6 +65,7 @@ class CItemCount : public CItemSubtypeST<Item_sum_count, SFT> {
     virtual RewritePlan *
     do_gather_type(const Item_sum_count &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const unsigned int arg_count =
             RiboldMYSQL::get_arg_count(i);
         TEST_BadItemArgumentCount(i.type(), 1, arg_count);
@@ -93,6 +94,7 @@ class CItemCount : public CItemSubtypeST<Item_sum_count, SFT> {
     do_rewrite_type(const Item_sum_count &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         std::list<Item *> args =
             rewrite_agg_args(i, constr,
                              static_cast<const RewritePlanOneOLK &>(rp),
@@ -113,6 +115,7 @@ class CItemChooseOrder : public CItemSubtypeST<Item_sum_hybrid, SFT> {
     virtual RewritePlan *
     do_gather_type(const Item_sum_hybrid &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const unsigned int arg_count = RiboldMYSQL::get_arg_count(i);
         TEST_BadItemArgumentCount(i.type(), 1, arg_count);
         const Item *const child = RiboldMYSQL::get_arg(i, 0);
@@ -134,6 +137,7 @@ class CItemChooseOrder : public CItemSubtypeST<Item_sum_hybrid, SFT> {
     do_rewrite_type(const Item_sum_hybrid &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         std::list<Item *> args =
             rewrite_agg_args(i, constr,
                              static_cast<const RewritePlanOneOLK &>(rp),
@@ -150,7 +154,7 @@ class CItemSum : public CItemSubtypeST<Item_sum_sum, SFT> {
     virtual RewritePlan *
     do_gather_type(const Item_sum_sum &i, Analysis &a) const
     {
-        // LOG(cdb_v) << "gather Item_sum_sum " << i << std::endl;
+        // LOG(cdb_v) << "do_gather_type" << i;
 
         const unsigned int arg_count = RiboldMYSQL::get_arg_count(i);
         TEST_BadItemArgumentCount(i.type(), 1, arg_count);
@@ -178,6 +182,7 @@ class CItemSum : public CItemSubtypeST<Item_sum_sum, SFT> {
     do_rewrite_type(const Item_sum_sum &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         auto rp_wc = static_cast<const RewritePlanWithChildren &>(rp);
         assert(rp_wc.childr_rp.size() == 1);
 
@@ -225,7 +230,7 @@ class CItemAvg : public CItemSubtypeST<Item_sum_sum, SFT> {
     virtual RewritePlan *
     do_gather_type(const Item_sum_sum &i, Analysis &a) const
     {
-        // LOG(cdb_v) << "gather Item_sum_sum " << i << std::endl;
+        // LOG(cdb_v) << "do_gather_type" << i;
 
         const unsigned int arg_count = RiboldMYSQL::get_arg_count(i);
         TEST_BadItemArgumentCount(i.type(), 1, arg_count);
@@ -253,6 +258,7 @@ class CItemAvg : public CItemSubtypeST<Item_sum_sum, SFT> {
     do_rewrite_type(const Item_sum_sum &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         auto rp_wc = static_cast<const RewritePlanWithChildren &>(rp);
         assert(rp_wc.childr_rp.size() == 1);
 
@@ -327,6 +333,7 @@ static class ANON : public CItemSubtypeIT<Item_ref, Item::Type::REF_ITEM> {
     virtual RewritePlan *
     do_gather_type(const Item_ref &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         std::vector<std::shared_ptr<RewritePlan> >
             childr_rp({std::shared_ptr<RewritePlan>(gather(**i.ref, a))});
 
@@ -343,6 +350,7 @@ static class ANON : public CItemSubtypeIT<Item_ref, Item::Type::REF_ITEM> {
     do_rewrite_type(const Item_ref &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         const std::string &db_name = a.getDatabaseName();
         // SUPPORT
         TEST_Text(Item::Type::FIELD_ITEM == (*i.ref)->type(),
@@ -366,6 +374,7 @@ static class ANON : public CItemSubtypeIT<Item_null, Item::Type::NULL_ITEM> {
     virtual RewritePlan *
     do_gather_type(const Item_null &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = "is null";
         reason rsn(FULL_EncSet, why, i);
         return new RewritePlan(FULL_EncSet, rsn);
@@ -375,6 +384,7 @@ static class ANON : public CItemSubtypeIT<Item_null, Item::Type::NULL_ITEM> {
     do_rewrite_type(const Item_null &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return RiboldMYSQL::clone_item(i);
     }
 

@@ -266,6 +266,7 @@ DBResult::unpack()
     // 'n' will be NULL when the mysql statement doesn't return a resultset
     // > ie INSERT
     if (nullptr == n) {
+        // LOG(warn) << "'n' will be NULL when the mysql statement doesn't return a resultset";
         return ResType(this->success, this->affected_rows, this->insert_id);
     }
 

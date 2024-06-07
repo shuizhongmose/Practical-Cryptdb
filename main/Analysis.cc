@@ -48,11 +48,15 @@ EncSet::intersect(const EncSet & es2) const
              * FIXME: Each clause of this if statement should make sure
              * that it's OnionMeta actually has the SecLevel.
              */
+            // 如果 fm和fm2同时为NULL？
             if (fm == NULL) {
+                // LOG(debug) << "fm is null, fm2 = " << fm2;
                 m[o] = LevelFieldPair(sl, fm2);
             } else if (fm2 == NULL) {
+                // LOG(debug) << "fm2 is null";
                 m[it->first] = LevelFieldPair(sl, fm);
             } else {
+                // LOG(debug) << "neither fm nor fm2 is null";
                 // This can succeed in three cases.
                 // 1> Same field, so same key.
                 // 2> Different fields, but SECLEVEL is PLAINVAL
@@ -100,7 +104,10 @@ EncSet::chooseOne() const {
         oSWP,
         oPLAIN,
     };
-
+    // LOG(debug) << "osl contest:";
+    // for (const auto o: osl) {
+    //     LOG(debug) << "\t onion is <" << o.first << ">";
+    // }
     static size_t onion_size =
         sizeof(onion_order) / sizeof(onion_order[0]);
     for (size_t i = 0; i < onion_size; i++) {
@@ -108,6 +115,7 @@ EncSet::chooseOne() const {
         const auto it = osl.find(o);
         if (it != osl.end()) {
             if (SECLEVEL::INVALID == it->second.first) {
+                // LOG(warn) << "\tSECLEVEL::INVALID == it->second.first" ;
                 continue;
             }
             if (0 == it->second.second
@@ -116,13 +124,14 @@ EncSet::chooseOne() const {
                 /*
                  * If no key, skip this OLK.
                  */
+                // LOG(warn) << "\tno key, skip this OLK";
                 continue;
             }
-
+            // LOG(debug) << "return OLK ("<< o << ")";
             return OLK(o, it->second.first, it->second.second);
         }
     }
-
+    // LOG(warn) << "\treturn invalidOLK";
     return OLK::invalidOLK();
 }
 
@@ -768,6 +777,7 @@ OnionMeta &Analysis::getOnionMeta(const std::string &db,
                                   const std::string &field,
                                   onion o) const
 {
+    // LOG(debug) << "onion is <" << o << ">";
     return this->getOnionMeta(this->getFieldMeta(db, table, field), o);
 }
 
@@ -775,7 +785,7 @@ OnionMeta &Analysis::getOnionMeta(const FieldMeta &fm,
                                   onion o) const
 {
     OnionMeta *const om = fm.getOnionMeta(o);
-    //TEST_IdentifierNotFound(om, TypeText<onion>::toText(o));    
+    TEST_IdentifierNotFound(om, TypeText<onion>::toText(o));    
     return *om;
 }
 
@@ -783,7 +793,7 @@ OnionMeta *Analysis::getOnionMeta2(const FieldMeta &fm,
                                   onion o) const
 {
     OnionMeta *const om = fm.getOnionMeta(o);
-    //TEST_IdentifierNotFound(om, TypeText<onion>::toText(o));    
+    TEST_IdentifierNotFound(om, TypeText<onion>::toText(o));    
     return om;
 }
 
@@ -810,6 +820,7 @@ FieldMeta &Analysis::getFieldMeta(const std::string &db,
 FieldMeta &Analysis::getFieldMeta(const TableMeta &tm,
                                   const std::string &field) const
 {
+    // LOG(debug) << "getFieldMeta of field <" << field << ">";
     FieldMeta *const fm = tm.getChild(IdentityMetaKey(field));
     TEST_IdentifierNotFound(fm, field);
 

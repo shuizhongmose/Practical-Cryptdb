@@ -374,7 +374,7 @@ remove_private_key(RSA *r)
 void
 generateKeys(PKCS * & pk, PKCS * & sk)
 {
-    LOG(crypto) << "pkcs generate";
+    // LOG(crypto) << "pkcs generate";
     PKCS * key =  RSA_generate_key(PKCS_bytes_size*8, 3, NULL, NULL);
 
     sk = RSAPrivateKey_dup(key);
@@ -387,7 +387,7 @@ generateKeys(PKCS * & pk, PKCS * & sk)
 string
 marshallKey(PKCS * mkey, bool ispk)
 {
-    LOG(crypto) << "pkcs encrypt";
+    // LOG(crypto) << "pkcs encrypt";
     string key;
     if (!ispk) {
         key = DER_encode_RSA_private(mkey);
@@ -401,7 +401,7 @@ marshallKey(PKCS * mkey, bool ispk)
 PKCS *
 unmarshallKey(const string &key, bool ispk)
 {
-    LOG(crypto) << "pkcs decrypt";
+    // LOG(crypto) << "pkcs decrypt";
     //cerr << "before \n";
     if (ispk) {
         return DER_decode_RSA_public(key);

@@ -385,7 +385,7 @@ decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
         out_i = (*it)->decrypt(*dec, IV);
         assert(out_i);
         dec = out_i;
-        LOG(cdb_v) << "dec okay";
+        // LOG(cdb_v) << "dec okay";
     }
 
     assert(out_i && out_i != &i);

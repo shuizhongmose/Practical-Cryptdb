@@ -54,7 +54,7 @@ static class ANON : public CItemSubtypeIT<Item_string,
     virtual RewritePlan *
     do_gather_type(const Item_string &i, Analysis &a) const
     {
-        // LOG(cdb_v) << " String item do_gather " << i << std::endl;
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = "is a string constant";
         reason rsn(FULL_EncSet_Str, why, i);
         return new RewritePlan(FULL_EncSet_Str, rsn);
@@ -68,7 +68,7 @@ static class ANON : public CItemSubtypeIT<Item_string,
     do_rewrite_type(const Item_string &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-        // LOG(cdb_v) << "do_rewrite_type String item " << i << std::endl;
+        // LOG(debug) << "do_rewrite_type " << i;
         return encrypt_item(i, constr, a);
     }
 
@@ -85,7 +85,7 @@ static class ANON : public CItemSubtypeIT<Item_float,
     virtual RewritePlan *
     do_gather_type(const Item_float &i, Analysis &a) const
     {
-        // LOG(cdb_v) << " Float item do_gather " << i << std::endl;
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = "is a float constant";
         reason rsn(PLAIN_EncSet, why, i);
         return new RewritePlan(PLAIN_EncSet, rsn);
@@ -95,7 +95,7 @@ static class ANON : public CItemSubtypeIT<Item_float,
     do_rewrite_type(const Item_float &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-        // LOG(cdb_v) << "do_rewrite_type Float item " << i << std::endl;
+        // LOG(debug) << "do_rewrite_type " << i;
         return encrypt_item(i, constr, a);
     }
 
@@ -112,7 +112,7 @@ static class ANON : public CItemSubtypeIT<Item_int, Item::Type::INT_ITEM> {
     virtual RewritePlan *
     do_gather_type(const Item_int &i, Analysis &a) const
     {
-        // LOG(cdb_v) << "CItemSubtypeIT (L966) num do_gather " << i << std::endl;
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = "is an int constant";
         reason rsn(FULL_EncSet_Int, why, i);
         return new RewritePlan(FULL_EncSet_Int, rsn);
@@ -127,7 +127,7 @@ static class ANON : public CItemSubtypeIT<Item_int, Item::Type::INT_ITEM> {
     do_rewrite_type(const Item_int &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-        // LOG(cdb_v) << "do_rewrite_type " << i << std::endl;
+        // LOG(cdb_v) << "do_rewrite_type " << i;
 
         return encrypt_item(i, constr, a);
     }
@@ -145,7 +145,7 @@ static class ANON : public CItemSubtypeIT<Item_decimal,
     virtual RewritePlan *
     do_gather_type(const Item_decimal &i, Analysis &a) const
     {
-        // LOG(cdb_v) << "CItemSubtypeIT decimal do_gather " << i << std::endl;
+        // LOG(cdb_v) << "do_gather_type" << i;
 
         const std::string why = "is a decimal constant";
         reason rsn(FULL_EncSet, why, i);
@@ -161,7 +161,7 @@ static class ANON : public CItemSubtypeIT<Item_decimal,
     do_rewrite_type(const Item_decimal &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-        // LOG(cdb_v) << "do_rewrite_type " << i << std::endl;
+        // LOG(cdb_v) << "do_rewrite_type " << i;
 
         return encrypt_item(i, constr, a);
     }

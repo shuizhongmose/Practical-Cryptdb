@@ -27,6 +27,7 @@
 
 #include <util/errstream.hh>
 #include <util/params.hh>
+#include <util/cryptdb_log.hh>
 
 #define RETURN_FALSE_IF_FALSE(status)       \
 {                                           \
@@ -227,8 +228,7 @@ const B &constGetAssert(const std::map<A, B> &m, const A &x,
 {
     auto it = m.find(x);
     if (m.end() == it) {
-        std::cerr << "item not present in map " << x << ". " << str
-                  << std::endl;
+        LOG(error) << "item not present in map " << x << ". " << str;
         assert(false);
     }
     return it->second;

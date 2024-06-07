@@ -64,6 +64,7 @@ class ANON : public CItemSubtypeIT<Item_field, Item::Type::FIELD_ITEM> {
     virtual RewritePlan *
     do_gather_type(const Item_field &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string fieldname = i.field_name;
         const std::string table =
             i.table_name ? i.table_name :
@@ -85,22 +86,28 @@ class ANON : public CItemSubtypeIT<Item_field, Item::Type::FIELD_ITEM> {
                     const RewritePlan &rp, Analysis &a)
         const
     {
+        // LOG(debug) << "***************begin do_rewrite_type **************";
+        // LOG(debug) << "do_rewrite_type for " << i << ", and table name of i is " << i.table_name;
         const std::string &db_name = a.getDatabaseName();
         const std::string plain_table_name =
             i.table_name ? i.table_name :
                             deductPlainTableName(i.field_name,
                                                  i.context, a);
+        // LOG(debug) << "begin get FieldMeta .....";
         const FieldMeta &fm =
             a.getFieldMeta(db_name, plain_table_name, i.field_name);
         //assert(constr.key == fm);
 
         //check if we need onion adjustment
+        // LOG(debug) << "begin get OnionMeta .....";
         const OnionMeta &om =
             a.getOnionMeta(db_name, plain_table_name, i.field_name,
                            constr.o);
+        // LOG(debug) << "begin get Onion Level .....";
         const SECLEVEL onion_level = a.getOnionLevel(om);
         assert(onion_level != SECLEVEL::INVALID);
 
+        // LOG(debug) << "begin check adjustment .....";
         if (constr.l < onion_level) {
             //need adjustment, throw exception
             const TableMeta &tm =
@@ -108,11 +115,13 @@ class ANON : public CItemSubtypeIT<Item_field, Item::Type::FIELD_ITEM> {
             throw OnionAdjustExcept(tm, fm, constr.o, constr.l);
         }
 
+        // LOG(debug) << "begin getAnonTableName .....";
         bool is_alias;
         const std::string anon_table_name =
             a.getAnonTableName(db_name, plain_table_name, &is_alias);
         const std::string anon_field_name = om.getAnonOnionName();
 
+        // LOG(debug) << "begin make_item_field .....";
         Item_field * const res =
             make_item_field(i, anon_table_name, anon_field_name);
 
@@ -134,6 +143,7 @@ class ANON : public CItemSubtypeIT<Item_field, Item::Type::FIELD_ITEM> {
             return make_item_insert_value(insert_i, res);
         }
 
+        // LOG(debug) << "***************return res**************";
         return res;
     }
 

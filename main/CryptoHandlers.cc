@@ -525,7 +525,7 @@ RND_int::encrypt(const Item &ptext, uint64_t IV) const
     cinteger.checkValue(p);
 
     const uint64_t c = bf.encrypt(p ^ IV);
-    LOG(encl) << "RND_int encrypt " << p << " IV " << IV << "-->" << c;
+    // LOG(encl) << "RND_int encrypt " << p << " IV " << IV << "-->" << c;
 
     return new (current_thd->mem_root)
                Item_int(static_cast<ulonglong>(c));
@@ -537,7 +537,7 @@ RND_int::decrypt(const Item &ctext, uint64_t IV) const
     // LOG(debug) << "-------- current_thd in RND_int::decrypt =" << current_thd;
     const uint64_t c = static_cast<const Item_int &>(ctext).value;
     const uint64_t p = bf.decrypt(c) ^ IV;
-    LOG(encl) << "RND_int decrypt " << c << " IV " << IV << " --> " << p;
+    // LOG(encl) << "RND_int decrypt " << c << " IV " << IV << " --> " << p;
 
     return new (current_thd->mem_root)
                Item_int(static_cast<ulonglong>(p));
@@ -611,9 +611,9 @@ RND_str::encrypt(const Item &ptext, uint64_t IV) const
         encrypt_AES_CBC(ItemToString(ptext), enckey.get(),
                         BytesFromInt(IV, SALT_LEN_BYTES), do_pad);
 
-    LOG(encl) << "RND_str encrypt " << ItemToString(ptext) << " IV "
-              << IV << "--->" << "len of enc " << enc.length()
-              << " enc " << enc;
+    // LOG(encl) << "RND_str encrypt " << ItemToString(ptext) << " IV "
+    //           << IV << "--->" << "len of enc " << enc.length()
+    //           << " enc " << enc;
 
     return new (current_thd->mem_root) Item_string(make_thd_string(enc),
                                                    enc.length(),
@@ -627,9 +627,9 @@ RND_str::decrypt(const Item &ctext, uint64_t IV) const
     const std::string &dec =
         decrypt_AES_CBC(ItemToString(ctext), deckey.get(),
                         BytesFromInt(IV, SALT_LEN_BYTES), do_pad);
-    LOG(encl) << "RND_str decrypt " << ItemToString(ctext) << " IV "
-              << IV << "-->" << "len of dec " << dec.length()
-              << " dec: " << dec;
+    // LOG(encl) << "RND_str decrypt " << ItemToString(ctext) << " IV "
+    //           << IV << "-->" << "len of dec " << dec.length()
+    //           << " dec: " << dec;
 
     return new (current_thd->mem_root) Item_string(make_thd_string(dec),
                                                    dec.length(),
@@ -831,7 +831,7 @@ DET_abstract_integer::encrypt(const Item &ptext, uint64_t IV) const
     getCInteger_().checkValue(value);
 
     const ulonglong res = static_cast<ulonglong>(getBlowfish_().encrypt(value));
-    LOG(encl) << "DET_int enc " << value << "--->" << res;
+    // LOG(encl) << "DET_int enc " << value << "--->" << res;
     return new (current_thd->mem_root) Item_int(res);
 }
 
@@ -841,7 +841,7 @@ DET_abstract_integer::decrypt(const Item &ctext, uint64_t IV) const
     // LOG(debug) << "-------- current_thd in DET_abstract_integer::decrypt =" << current_thd;;
     const ulonglong value = static_cast<const Item_int &>(ctext).value;
     const ulonglong retdec = getBlowfish_().decrypt(value);
-    LOG(encl) << "DET_int dec " << value << "--->" << retdec;
+    // LOG(encl) << "DET_int dec " << value << "--->" << retdec;
     return new (current_thd->mem_root) Item_int(retdec);
 }
 
@@ -895,8 +895,8 @@ DET_str::encrypt(const Item &ptext, uint64_t IV) const
     // LOG(debug) << "-------- current_thd in DET_str::encrypt =" << current_thd;;
     const std::string plain = ItemToString(ptext);
     const std::string enc = encrypt_AES_CMC(plain, enckey.get(), do_pad);
-    LOG(encl) << " DET_str encrypt " << plain  << " IV " << IV << " ---> "
-              << " enc len " << enc.length() << " enc " << enc;
+    // LOG(encl) << " DET_str encrypt " << plain  << " IV " << IV << " ---> "
+    //           << " enc len " << enc.length() << " enc " << enc;
 
     return new (current_thd->mem_root) Item_string(make_thd_string(enc),
                                                    enc.length(),
@@ -909,9 +909,9 @@ DET_str::decrypt(const Item &ctext, uint64_t IV) const
     // LOG(debug) << "-------- current_thd in DET_str::decrypt =" << current_thd;;
     const std::string enc = ItemToString(ctext);
     const std::string dec = decrypt_AES_CMC(enc, deckey.get(), do_pad);
-    LOG(encl) << " DET_str decrypt enc len " << enc.length()
-              << " enc " << enc << " IV " << IV << " ---> "
-              << " dec len " << dec.length() << " dec " << dec;
+    // LOG(encl) << " DET_str decrypt enc len " << enc.length()
+    //           << " enc " << enc << " IV " << IV << " ---> "
+    //           << " dec len " << dec.length() << " dec " << dec;
 
     return new (current_thd->mem_root) Item_string(make_thd_string(dec),
                                                    dec.length(),
@@ -1295,7 +1295,7 @@ OPE_int::encrypt(const Item &ptext, uint64_t IV) const
     const uint64_t pval = RiboldMYSQL::val_uint(ptext);
     cinteger.checkValue(pval);
 
-    LOG(encl) << "OPE_int encrypt " << pval << " IV " << IV << std::endl;
+    // LOG(encl) << "OPE_int encrypt " << pval << " IV " << IV << std::endl;
 
     if (MYSQL_TYPE_VARCHAR != this->cinteger.getFieldType()) {
         const ulonglong enc = uint64FromZZ(ope.encrypt(ZZFromUint64(pval)));
@@ -1321,8 +1321,8 @@ OPE_int::encrypt(const Item &ptext, uint64_t IV) const
 Item *
 OPE_int::decrypt(const Item &ctext, uint64_t IV) const
 {
-    LOG(encl) << "OPE_int decrypt " << ItemToString(ctext) << " IV " << IV
-              << std::endl;
+    // LOG(encl) << "OPE_int decrypt " << ItemToString(ctext) << " IV " << IV
+    //           << std::endl;
 
     if (MYSQL_TYPE_VARCHAR != this->cinteger.getFieldType()) {
         const ulonglong cval = RiboldMYSQL::val_uint(ctext);
@@ -1493,7 +1493,7 @@ HOM::decrypt(const Item &ctext, uint64_t IV) const
 
     const ZZ enc = ItemStrToZZ(ctext);
     const ZZ dec = sk->decrypt(enc);
-    LOG(encl) << "HOM ciph " << enc << "---->" << dec;
+    // LOG(encl) << "HOM ciph " << enc << "---->" << dec;
     TEST_Text(NumBytes(dec) <= 8,
               "Summation produced an integer larger than 64 bits");
     return ZZToItemInt(dec);
@@ -1657,7 +1657,7 @@ Search::encrypt(const Item &ptext, uint64_t IV) const
     const std::list<std::string> * const tokens = tokenize(plainstr);
     const std::string ciph = encryptSWP(key, *tokens);
 
-    LOG(encl) << "SEARCH encrypt " << plainstr << " --> " << ciph;
+    // LOG(encl) << "SEARCH encrypt " << plainstr << " --> " << ciph;
 
     return new (current_thd->mem_root) Item_string(newmem(ciph), ciph.length(), &my_charset_bin);
 }

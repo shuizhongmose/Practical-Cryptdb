@@ -67,13 +67,16 @@ rewrite_args_FN(const T &i, const OLK &constr,
     out_i->set_arguments(*arg_list);
 
     Item **const args = out_i->arguments();
+    // LOG(debug) << "****************begin*******************";
+    // LOG(debug) << "do rewreite args, argument count of i is " << count;
     for (uint x = 0; x < count; x++) {
+        // LOG(debug) << "do rewreite < " << *args[x] << " >, and onion is <"<< rp.olk.o << ">, and constr.o is <" << constr.o << ">";
         args[x] =
             itemTypes.do_rewrite(*args[x], rp.olk,
                                  *rp.childr_rp[x].get(), a);
         args[x]->name = NULL; // args should never have aliases...
     }
-
+    // LOG(debug) << "*****************end*********************";
     return out_i;
 }
 
@@ -150,16 +153,17 @@ iterateGather(const Item_func &i, const EncSet &out_es, EncSet child_es,
               const std::string &why, Analysis &a)
 {
     const reason rsn(out_es, why, i);
-
+    // LOG(debug) << "child_es = " << child_es;
     const unsigned int arg_count = i.argument_count();
     std::vector<std::shared_ptr<RewritePlan> > childr_rp(arg_count);
     Item *const * const args = i.arguments();
     for (unsigned int index = 0; index < arg_count; ++index) {
         childr_rp[index] =
             std::shared_ptr<RewritePlan>(gather(*args[index],a));
+        // LOG(debug) << "childr_rp["<< index << "]->es_out = " << childr_rp[index]->es_out; 
         child_es = child_es.intersect(childr_rp[index]->es_out);
     }
-
+    // LOG(debug) << "child_es.chooseOne().o = " << child_es.chooseOne().o;
     return new RewritePlanOneOLK(out_es, child_es.chooseOne(),
                                  childr_rp, rsn);
 }
@@ -178,6 +182,7 @@ static class ANON : public CItemSubtypeFT<Item_func_neg, Item_func::Functype::NE
     virtual RewritePlan *
     do_gather_type(const Item_func_neg &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         TEST_BadItemArgumentCount(i.type(), 1, i.argument_count());
 
         auto arg = i.arguments()[0];
@@ -216,6 +221,7 @@ static class ANON : public CItemSubtypeFT<Item_func_neg, Item_func::Functype::NE
                     const RewritePlan &rp, Analysis &a)
         const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         const RewritePlanOneOLK &rp_one =
             static_cast<const RewritePlanOneOLK &>(rp);
 
@@ -244,6 +250,7 @@ static class ANON : public CItemSubtypeFT<Item_func_not,
     virtual RewritePlan *
     do_gather_type(const Item_func_not &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const EncSet out_es = PLAIN_EncSet;
         const EncSet child_es = EQ_EncSet;
         const std::string why = "not";
@@ -261,6 +268,7 @@ static class ANON : public CItemSubtypeFT<Item_func_not,
                     const RewritePlan &rp, Analysis &a)
         const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -273,7 +281,7 @@ class CItemCompare : public CItemSubtypeFT<Item_func, FT> {
     virtual RewritePlan *
     do_gather_type(const Item_func &i, Analysis &a) const
     {
-        // LOG(cdb_v) << "CItemCompare (L1139) do_gather func " << i;
+        // LOG(cdb_v) << "do_gather_type" << i;
 
         std::string why;
 
@@ -336,6 +344,7 @@ class CItemCond : public CItemSubtypeFT<Item_cond, FT> {
     virtual RewritePlan *
     do_gather_type(const Item_cond &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const unsigned int arg_count =
             RiboldMYSQL::argument_list(i)->elements;
         // > Multiple ANDs in a query are represented with a single AND
@@ -380,6 +389,7 @@ class CItemCond : public CItemSubtypeFT<Item_cond, FT> {
     do_rewrite_type(const Item_cond &i, const OLK &olk,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         const unsigned int arg_count =
             RiboldMYSQL::argument_list(i)->elements;
 
@@ -419,6 +429,7 @@ class CItemNullcheck : public CItemSubtypeFT<Item_bool_func, FT> {
     virtual RewritePlan *
     do_gather_type(const Item_bool_func &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         Item *const *const args = i.arguments();
         TEST_BadItemArgumentCount(i.type(), 1, i.argument_count());
 
@@ -440,6 +451,7 @@ class CItemNullcheck : public CItemSubtypeFT<Item_bool_func, FT> {
                     const RewritePlan &rp, Analysis &a)
         const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -459,6 +471,7 @@ static class ANON : public CItemSubtypeFT<Item_func_get_system_var, Item_func::F
     virtual RewritePlan *
     do_gather_type(const Item_func_get_system_var &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = "system var";
         const reason r = reason(PLAIN_EncSet, why, i);
         return new RewritePlan(PLAIN_EncSet, r);
@@ -469,6 +482,7 @@ static class ANON : public CItemSubtypeFT<Item_func_get_system_var, Item_func::F
                     const OLK &constr, const RewritePlan &_rp,
                     Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return &const_cast<Item_func_get_system_var &>(i);
     }
 } ANON;
@@ -479,6 +493,7 @@ static class ANON : public CItemSubtypeFT<Item_func_get_user_var, Item_func::Fun
     virtual RewritePlan *
     do_gather_type(const Item_func_get_user_var &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = "user var";
         const reason r = reason(PLAIN_EncSet, why, i);
         return new RewritePlan(PLAIN_EncSet, r);
@@ -489,6 +504,7 @@ static class ANON : public CItemSubtypeFT<Item_func_get_user_var, Item_func::Fun
                     const OLK &constr, const RewritePlan &_rp,
                     Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return &const_cast<Item_func_get_user_var &>(i);
     }
 } ANON;
@@ -502,6 +518,7 @@ class CItemAdditive : public CItemSubtypeFN<IT, NAME> {
     virtual RewritePlan *
     do_gather_type(const IT &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = NAME;
         return friendlyGather(a, i, ADD_EncSet, why);
     }
@@ -566,6 +583,7 @@ class CItemMath : public CItemSubtypeFN<IT, NAME> {
     virtual RewritePlan *
     do_gather_type(const IT &i, Analysis & a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = NAME;
         return typical_gather(a, i, PLAIN_EncSet, why, true);
     }
@@ -579,6 +597,7 @@ class CItemMath : public CItemSubtypeFN<IT, NAME> {
     do_rewrite_type(const IT &i, const OLK &constr,
                     const RewritePlan &_rp, Analysis & a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         TEST_BadItemArgumentCount(i.type(), 2, i.argument_count());
         Item *const *const args = i.arguments();
 
@@ -619,6 +638,7 @@ class CItemLeafFunc : public CItemSubtypeFN<Item_func, NAME> {
     virtual RewritePlan *
     do_gather_type(const Item_func &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = "leaf func (" + std::string(NAME) + ")";
         return allPlainIterateGather(i, why, a);
     }
@@ -628,6 +648,7 @@ class CItemLeafFunc : public CItemSubtypeFN<Item_func, NAME> {
                     const RewritePlan &rp, Analysis &a)
         const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -668,6 +689,7 @@ class CItemDateExtractFunc : public CItemSubtypeFN<Item_func, NAME> {
     virtual RewritePlan *
     do_gather_type(const Item_func &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = NAME;
         return allPlainIterateGather(i, why, a);
     }
@@ -682,6 +704,7 @@ class CItemDateExtractFunc : public CItemSubtypeFN<Item_func, NAME> {
                     const RewritePlan &rp, Analysis &a)
         const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -754,6 +777,7 @@ static class ANON : public CItemSubtypeFT<Item_func_like, Item_func::Functype::L
     virtual RewritePlan *
     do_gather_type(const Item_func_like &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         TEST_BadItemArgumentCount(i.type(), 2, i.argument_count());
         const std::string why = "like";
         return allPlainIterateGather(i, why, a);
@@ -766,6 +790,7 @@ static class ANON : public CItemSubtypeFT<Item_func_like, Item_func::Functype::L
     do_rewrite_type(const Item_func_like &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_rewrite_type Item_func_like " << i << " constr " << EncSet(constr) << std::endl;
         const RewritePlanOneOLK &one_rp =
             static_cast<const RewritePlanOneOLK &>(rp);
         return rewrite_args_FN(i, constr, one_rp, a);
@@ -789,6 +814,7 @@ static class ANON : public CItemSubtypeFT<Item_func_in, Item_func::Functype::IN_
     virtual RewritePlan *
     do_gather_type(const Item_func_in &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const EncSet out_es = PLAIN_EncSet;
         const EncSet child_es = EQ_EncSet; 
         const std::string why = "in";
@@ -805,6 +831,7 @@ static class ANON : public CItemSubtypeFT<Item_func_in, Item_func::Functype::IN_
                     const RewritePlan &rp, Analysis &a)
         const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -816,6 +843,7 @@ static class ANON : public CItemSubtypeFT<Item_func_between,
     virtual RewritePlan *
     do_gather_type(const Item_func_between &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const EncSet out_es = PLAIN_EncSet;
         const EncSet child_es = ORD_EncSet; 
         const std::string why = "between";
@@ -832,6 +860,7 @@ static class ANON : public CItemSubtypeFT<Item_func_between,
                     const RewritePlan &rp, Analysis &a)
         const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -843,6 +872,7 @@ class CItemMinMax : public CItemSubtypeFN<Item_func_min_max, FN> {
     virtual RewritePlan *
     do_gather_type(const Item_func_min_max &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const unsigned int arg_count = i.argument_count();
         TEST_BadItemArgumentCount(i.type(), 2, arg_count);
 
@@ -883,6 +913,7 @@ class CItemMinMax : public CItemSubtypeFN<Item_func_min_max, FN> {
     do_rewrite_type(const Item_func_min_max &i, const OLK &constr,
                     const RewritePlan &_rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         const RewritePlanOneOLK &rp =
             static_cast<const RewritePlanOneOLK &>(_rp);
 
@@ -981,6 +1012,7 @@ static class ANON : public CItemSubtypeFN<Item_func_nullif, str_nullif> {
     virtual RewritePlan *
     do_gather_type(const Item_func_nullif &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         TEST_BadItemArgumentCount(i.type(), 2, i.argument_count());
         Item *const *const args = i.arguments();
         std::vector<std::shared_ptr<RewritePlan> >
@@ -1013,6 +1045,7 @@ static class ANON : public CItemSubtypeFN<Item_func_nullif, str_nullif> {
                     const RewritePlan &rp, Analysis &a)
         const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -1039,6 +1072,7 @@ static class ANON : public CItemSubtypeFN<Item_func_case, str_case> {
     virtual RewritePlan *
     do_gather_type(const Item_func_case &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string &why = str_case;
         return allPlainIterateGather(i, why, a);
         UNIMPLEMENTED;
@@ -1053,6 +1087,7 @@ static class ANON : public CItemSubtypeFN<Item_func_case, str_case> {
     do_rewrite_type(const Item_func_case &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp), a);
     }
@@ -1079,6 +1114,7 @@ static class ANON : public CItemSubtypeFN<Item_in_optimizer,
                     const RewritePlan &rp, Analysis &a)
         const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -1092,6 +1128,7 @@ class CItemStrconv : public CItemSubtypeFN<Item_str_conv, NAME> {
     virtual RewritePlan *
     do_gather_type(const Item_str_conv &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = "strconv";
         return allPlainIterateGather(i, why, a);
     }
@@ -1105,6 +1142,7 @@ class CItemStrconv : public CItemSubtypeFN<Item_str_conv, NAME> {
     do_rewrite_type(const Item_str_conv &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -1147,6 +1185,7 @@ static class ANON : public CItemSubtypeFN<Item_date_add_interval, str_date_add_i
     virtual RewritePlan *
     do_gather_type(const Item_date_add_interval &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const EncSet out_es = PLAIN_EncSet;
         const EncSet child_es = PLAIN_EncSet;
         const std::string why = "date add interval";
@@ -1164,6 +1203,7 @@ static class ANON : public CItemSubtypeFN<Item_date_add_interval, str_date_add_i
     do_rewrite_type(const Item_date_add_interval &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -1176,6 +1216,7 @@ class CItemDateNow : public CItemSubtypeFN<Item_func_now, NAME> {
     virtual RewritePlan *
     do_gather_type(const Item_func_now &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = "now";
         return allPlainIterateGather(i, why, a);
     }
@@ -1185,6 +1226,7 @@ class CItemDateNow : public CItemSubtypeFN<Item_func_now, NAME> {
                     const RewritePlan &rp, Analysis &a)
         const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -1207,6 +1249,7 @@ static class ANON: public CItemSubtypeFT<Item_char_typecast,
     virtual RewritePlan *
     do_gather_type(const Item_char_typecast &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = "char_typecast";
         return allPlainIterateGather(i, why, a);
     }
@@ -1215,6 +1258,7 @@ static class ANON: public CItemSubtypeFT<Item_char_typecast,
     do_rewrite_type(const Item_char_typecast &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -1226,6 +1270,7 @@ class CItemFuncMiscPlain : public CItemSubtypeFN<Item_func, NAME> {
     virtual RewritePlan *
     do_gather_type(const Item_func &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = NAME;
         return allPlainIterateGather(i, why, a);
     }
@@ -1234,6 +1279,7 @@ class CItemFuncMiscPlain : public CItemSubtypeFN<Item_func, NAME> {
     do_rewrite_type(const Item_func &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);
@@ -1255,6 +1301,7 @@ static class ANON : public CItemSubtypeFN<Item_func_current_user,
     virtual RewritePlan *
     do_gather_type(const Item_func_current_user &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const EncSet out_es = PLAIN_EncSet;
         const EncSet child_es = PLAIN_EncSet;
         const std::string why = str_current_user;
@@ -1266,6 +1313,7 @@ static class ANON : public CItemSubtypeFN<Item_func_current_user,
     do_rewrite_type(const Item_func_current_user &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         return rewrite_args_FN(i, constr,
                                static_cast<const RewritePlanOneOLK &>(rp),
                                a);

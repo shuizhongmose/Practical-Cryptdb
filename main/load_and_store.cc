@@ -244,8 +244,8 @@ static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db =
         TableMeta & tbm = *dbm.getChild(IdentityMetaKey(table));
     	return tbm.orderedFieldMetas();
      }else{
-         std::cout<<"data base not exists"<<std::endl;
-	 return std::vector<FieldMeta *>();
+        LOG(warn) <<"data base not exists";
+	    return std::vector<FieldMeta *>();
      }
 }
 

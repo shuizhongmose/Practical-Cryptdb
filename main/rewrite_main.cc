@@ -955,6 +955,7 @@ static class ANON : public CItemSubtypeIT<Item_subselect,
     virtual RewritePlan *
     do_gather_type(const Item_subselect &i, Analysis &a) const
     {
+        // LOG(cdb_v) << "do_gather_type" << i;
         const std::string why = "subselect";
 
         // create an Analysis object for subquery gathering/rewriting
@@ -1024,6 +1025,7 @@ static class ANON : public CItemSubtypeIT<Item_subselect,
                     const RewritePlan &rp, Analysis &a)
         const
     {
+        // LOG(debug) << "do_rewrite_type " << i;
         const RewritePlanWithAnalysis &rp_w_analysis =
             static_cast<const RewritePlanWithAnalysis &>(rp);
         const st_select_lex *const select_lex =
@@ -1349,7 +1351,7 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
                 out_data = adjustOnion(a, e.o, e.tm, e.fm, e.tolevel);
             
             std::string resadjust = serilize_OnionAdjustExcept(e);
-            std::cout<<"###################################################**************************************"<<resadjust<<std::endl;
+            // LOG(debu) <<"###################################################**************************************"<<resadjust<<std::endl;
             std::vector<std::unique_ptr<Delta> > &deltas = out_data.first;
             const std::list<std::string> &adjust_queries = out_data.second;
             return new OnionAdjustmentExecutor(std::move(deltas),
