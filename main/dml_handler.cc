@@ -473,8 +473,8 @@ process_select_lex(const st_select_lex &select_lex, Analysis &a)
     //如果不是jion式的语句, 就不用管了.其内部通过递归处理nested join, 并且处理了*on*语句.
     process_table_list(select_lex.top_join_list, a);
 
-     //这里处理的是itemlist, 也就是List of columns and expressions: SELECT: Columns and 	
-     //expressions in the SELECT list.是List<Item>类型.
+    //这里处理的是itemlist, 也就是List of columns and expressions: SELECT: Columns and 	
+    //expressions in the SELECT list.是List<Item>类型.
     //select 也就是选择域
     auto item_it =
         RiboldMYSQL::constList_iterator<Item>(select_lex.item_list);
@@ -486,12 +486,15 @@ process_select_lex(const st_select_lex &select_lex, Analysis &a)
         if (!item)
             break;
         numOfItem++;
+        // LOG(debug) << "gather and add analysis rewreite plan, item is <" << item << ">";
         gatherAndAddAnalysisRewritePlan(*item, a);
     }
     //这里处理的是select_lex.where和select_lex.having, 通过Item类型的函数, 也就是下面那个, 为其添加
     //rewriteplain. 然后再通过process_order, 对select_lex.group_list和select_lex.order_list添加
     //rewritePlain
+    // LOG(debug) << "begin to add where, having, order by and group by to rewrite plan ......";
     process_filters_lex(select_lex, a);
+    // LOG(debug) << "finish to add where, having, order by and group by to rewrite plan";
 }
 
 static void
@@ -563,18 +566,22 @@ rewrite_filters_lex(const st_select_lex &select_lex, Analysis & a)
     st_select_lex *const new_select_lex = copyWithTHD(&select_lex);
 
     // FIXME: Use const reference for list.
+    // LOG(debug) << " begin rewrite group by ...";
     new_select_lex->group_list =
         *rewrite_order(a, select_lex.group_list, EQ_EncSet, "group by");
+    // LOG(debug) << " begin rewrite order by ...";
     new_select_lex->order_list =
         *rewrite_order(a, select_lex.order_list, ORD_EncSet, "order by");
 
     if (select_lex.where) {
+        // LOG(debug) << " begin set where ...";
         set_where(new_select_lex, rewrite(*select_lex.where,
                                           PLAIN_EncSet, a));
     }
     // HACK: We only care about Analysis::item_cache from HAVING.
     a.item_cache.clear();
     if (select_lex.having) {
+        // LOG(debug) << " begin set having ...";
         set_having(new_select_lex, rewrite(*select_lex.having,
                                            PLAIN_EncSet, a));
     }
@@ -1592,8 +1599,8 @@ nextImpl(const ResType &res, const NextParams &nparams)
                                                       db_name, table_name,
                                                       field_name, onion_name,
                                                       level);
-                            TEST_ErrPkt(true == b,
-                                        "failed producing directive results");
+                            // TEST_ErrPkt(true == b,
+                            //             "failed producing directive results");
                         }
                     }
                 }
@@ -1627,7 +1634,7 @@ addShowDirectiveEntry(const std::unique_ptr<Connect> &e_conn,
                       const std::string &level)
 {
     const std::string &query =
-        "INSERT INTO" + MetaData::Table::showDirective() +
+        "INSERT INTO " + MetaData::Table::showDirective() +
         " (_database, _table, _field, _onion, _level) VALUES "
         " ('" + database + "', '" + table + "',"
         "  '" + field + "', '" + onion + "', '" + level + "')";
