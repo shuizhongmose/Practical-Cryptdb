@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include <util/enum_text.hh>
+#include <util/cryptdb_log.hh>
 #include <main/serializers.hh>
 
 
@@ -293,12 +294,25 @@ template <typename ChildType, typename KeyType>
 ChildType *
 MappedDBMeta<ChildType, KeyType>::getChild(const KeyType &key) const
 {
-    for (const auto &it : children) {
-        if (it.first == key) {
-            return it.second.get();
-        }
+    // DELETE: too slow
+    // for (const auto &it : children) {
+    //     if (it.first == key) {
+    //         return it.second.get();
+    //     }
+    // }
+    // ADD: improve find speed
+    // LOG(debug) << "----------------------------------";
+    // LOG(debug) << "key type is " << typeName() << ", and value is <" << key.getValue() << ">";
+    // LOG(debug) << "children size = " << children.size() << " and children are: ";
+    // for (const auto &it : children) {
+    //     LOG(debug) << "\tchildren key value is <" << it.first.getValue() << ">"; 
+    // }
+    auto it = children.find(key);
+    if (it != children.end()) {
+        // LOG(debug) << "get key";
+        return it->second.get();
     }
-
+    // LOG(debug) << "return NULL";
     return NULL;
 }
 
