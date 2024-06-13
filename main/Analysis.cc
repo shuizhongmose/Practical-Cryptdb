@@ -979,12 +979,12 @@ lexToQuery(const LEX &lex)
     std::ostringstream o;
     o << const_cast<LEX &>(lex);
 
-    // // 清空lex中的`field_list`、`many_values`、`update_list`、`value_list`
-    const_cast<LEX &>(lex).field_list.delete_elements();
-    const_cast<LEX &>(lex).many_values.delete_elements();
-    const_cast<LEX &>(lex).update_list.delete_elements();
-    const_cast<LEX &>(lex).value_list.delete_elements();
+    // // 清空lex中的 field_list、many_values、update_list、value_list、create_list等
+    auto &mutable_lex = const_cast<LEX &>(lex);
+    mutable_lex.field_list.delete_elements();
+    mutable_lex.many_values.delete_elements();
+    mutable_lex.update_list.delete_elements();
+    mutable_lex.value_list.delete_elements();
+    mutable_lex.alter_info.reset();
     return o.str();
 }
-
-
