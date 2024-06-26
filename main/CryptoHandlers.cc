@@ -1292,6 +1292,7 @@ reverse(const std::string &s)
 Item *
 OPE_int::encrypt(const Item &ptext, uint64_t IV) const
 {
+    // LOG(debug) << "-------- current_thd in OPE_int::encrypt =" << current_thd;
     const uint64_t pval = RiboldMYSQL::val_uint(ptext);
     cinteger.checkValue(pval);
 
@@ -1476,11 +1477,14 @@ HOM::unwait() const {
 
 Item *
 HOM::encrypt(const Item &ptext, uint64_t IV) const{
+    // LOG(debug) << "-------- current_thd in HOM::encrypt =" << current_thd;
     if (true == waiting) {
         this->unwait();
     }
 
     const ZZ enc = sk->encrypt(ItemIntToZZ(ptext));
+    
+    // LOG(encl) << " HOME encrypt " << " IV " << IV << " ---> " << " enc " << enc;
     return ZZToItemStr(enc);
 }
 
@@ -1652,6 +1656,7 @@ newmem(const std::string &a)
 Item *
 Search::encrypt(const Item &ptext, uint64_t IV) const
 {
+    // LOG(debug) << "-------- current_thd in Search::encrypt =" << current_thd;
     const std::string plainstr = ItemToString(ptext);
     //TODO: remove string, string serves this purpose now..
     const std::list<std::string> * const tokens = tokenize(plainstr);
@@ -1739,6 +1744,8 @@ PlainText::newCreateField(const Create_field &cf,
 Item *
 PlainText::encrypt(const Item &ptext, uint64_t IV) const
 {
+    // LOG(debug) << "-------- current_thd in PlainText::encrypt =" << current_thd;
+    // LOG(encl) << " PlainText encrypt " << " IV " << IV ;
     return dup_item(ptext);
 }
 

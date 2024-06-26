@@ -1,4 +1,6 @@
 #include <functional>
+#include <iostream>
+#include <sys/time.h>
 
 #include <main/dml_handler.hh>
 #include <main/rewrite_main.hh>
@@ -61,6 +63,45 @@ void rewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
     }
 }
 
+std::vector<Item *> rewriteInsertHelper2(const Item &i, const FieldMeta &fm, Analysis &a,
+                        THD* holdThd, pthread_mutex_t *memRootMutex)
+{
+    // std::cout << "main/dml_handler.cc:69 begin rewriteInsertHelper2 ......" << std::endl;
+    std::vector<Item *> l;
+    //这里先做lookup, 找到类以后调用内部的结果, 试试
+    //对于普通的student操作, 最后调用的是ANON的typical_rewrite_insert_type来进行重写.
+    itemTypes.do_rewrite_insert(i, fm, a, &l, holdThd, memRootMutex);
+    // std::cout << "main/dml_handler.cc:74 finish rewriteInsertHelper2" << std::endl;
+    return l;
+}
+
+
+///////////////// ADD: rewrite 线程处理函数 //////////////////////////
+std::vector<Item *> fieldListRewriteThdFunc(std::vector<FieldMeta *> &fmVec, 
+                        const Item *const i, std::string db_name, Analysis &a,
+                        THD* holdThd, pthread_mutex_t &memRootMutex) {
+    // std::cout << "main/dml_handler.cc:83 A ha, I am in fieldListRewriteThdFunc ...." << std::endl;
+    TEST_TextMessageError(i->type() == Item::FIELD_ITEM,
+                            "Expected field item!");
+    const Item_field *const ifd =
+                static_cast<const Item_field *>(i);
+    FieldMeta &fm = a.getFieldMeta(db_name, ifd->table_name,
+                                ifd->field_name);
+    pthread_mutex_lock(&memRootMutex);
+    fmVec.push_back(&fm);
+    pthread_mutex_unlock(&memRootMutex);
+
+    auto newFiledList = rewriteInsertHelper2(*i, fm, a, holdThd, &memRootMutex);
+    return newFiledList;
+}
+
+std::vector<Item *> valuesRewriteThd(std::vector<FieldMeta *> &fmVec, 
+                        const Item *const i, std::string db_name, Analysis &a) {
+    // TODO:
+    std::vector<Item *> newValList;
+    return newValList;
+}
+///////////////// end: rewrite 线程处理函数 //////////////////////////
 
 void InsertHandler::gather(Analysis &a, LEX *const lex) const {
         //only select xxx etc?不是的!!!
@@ -77,157 +118,360 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
         return;
     }
 
-    AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex)
-        const{
+AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) const{
         // FIXME：new_lex是来自lex的浅拷贝
-        LEX *const new_lex = copyWithTHD(lex);
-        const std::string &table =
-            lex->select_lex.table_list.first->table_name;
-        const std::string &db_name =
-            lex->select_lex.table_list.first->db;
-        TEST_DatabaseDiscrepancy(db_name, a.getDatabaseName());
-        //from databasemeta to tablemeta.
-        const TableMeta &tm = a.getTableMeta(db_name, table);
+    LEX *const new_lex = copyWithTHD(lex);
+    const std::string &table =
+        lex->select_lex.table_list.first->table_name;
+    const std::string &db_name =
+        lex->select_lex.table_list.first->db;
+    TEST_DatabaseDiscrepancy(db_name, a.getDatabaseName());
+    //from databasemeta to tablemeta.
+    const TableMeta &tm = a.getTableMeta(db_name, table);
 
-        //rewrite table name
-        new_lex->select_lex.table_list.first =
-            rewrite_table_list(lex->select_lex.table_list.first, a);
+    //rewrite table name
+    new_lex->select_lex.table_list.first =
+        rewrite_table_list(lex->select_lex.table_list.first, a);
 
-        // -------------------------
-        // Fields (and default data)
-        // -------------------------
-        // If the fields list doesn't exist, or is empty; the 'else' of
-        // this code block will put every field into fmVec.
-        // > INSERT INTO t VALUES (1, 2, 3);
-        // > INSERT INTO t () VALUES ();
-        // FIXME: Make vector of references.
-        std::vector<FieldMeta *> fmVec;
-        std::vector<Item *> implicit_defaults;
+    // -------------------------
+    // Fields (and default data)
+    // -------------------------
+    // If the fields list doesn't exist, or is empty; the 'else' of
+    // this code block will put every field into fmVec.
+    // > INSERT INTO t VALUES (1, 2, 3);
+    // > INSERT INTO t () VALUES ();
+    // FIXME: Make vector of references.
+    std::vector<FieldMeta *> fmVec;
+    std::vector<Item *> implicit_defaults;
+
+    struct timeval start, end;
+    double duration = 0;
+    // 使用rewriteInsertHelper对SQL进行重写
+    //For insert, we can choose to specify field list or omit it.
+    LOG(debug) << "---------> current_thd = " << current_thd << " <----------";
+    if (lex->field_list.head()) {
+        auto it = List_iterator<Item>(lex->field_list);
+        List<Item> newList;
+        for (;;) {
+            const Item *const i = it++;
+            if (!i) {
+                break;
+            }
+            //这下也就知道了field item是什么了
+            TEST_TextMessageError(i->type() == Item::FIELD_ITEM,
+                                    "Expected field item!");
+            const Item_field *const ifd =
+                static_cast<const Item_field *>(i);
+            FieldMeta &fm =
+                a.getFieldMeta(db_name, ifd->table_name,
+                                ifd->field_name);
+            fmVec.push_back(&fm);
+            gettimeofday(&start, nullptr);
+            rewriteInsertHelper(*i, fm, a, &newList);
+            gettimeofday(&end, nullptr);
+            duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+            LOG(debug) << "duration is " << duration;
+        }
+
+        // Collect the implicit defaults.
+        // > Such must be done because fields that can not have NULL
+        // will be implicitly converted by mysql sans encryption.
+        std::vector<FieldMeta *> field_implicit_defaults =
+            vectorDifference(tm.defaultedFieldMetas(), fmVec);
+        const Item_field *const seed_item_field =
+            static_cast<Item_field *>(new_lex->field_list.head());            
+        for (auto implicit_it : field_implicit_defaults) {
+            // Get default fields.
+            const Item_field *const item_field =
+                make_item_field(*seed_item_field, table,
+                                implicit_it->getFieldName());
+            rewriteInsertHelper(*item_field, *implicit_it, a,
+                                &newList);
+
+            // Get default values.
+            const std::string def_value = implicit_it->defaultValue();
+            rewriteInsertHelper(*make_item_string(def_value),
+                                *implicit_it, a, &implicit_defaults);
+        }
+        // FIXME： field_list 需要在pop的时候手动清除空间
+        new_lex->field_list = newList;
+    } else {
+        // No field list, use the table order.
+        // > Because there is no field list, fields with default
+        //   values must be explicity INSERTed so we don't have to
+        //   take any action with respect to defaults.
+        assert(fmVec.empty());
+        std::vector<FieldMeta *> fmetas = tm.orderedFieldMetas();
+        fmVec.assign(fmetas.begin(), fmetas.end());
+    }
+
+    // -----------------
+    //      Values
+    // -----------------
+    if (lex->many_values.head()) {
+        //开始处理many values
+        auto it = List_iterator<List_item>(lex->many_values);
+        List<List_item> newList;
+        for (;;) {
+            List_item *const li = it++;
+            if (!li) {
+                break;
+            }
+            List<Item> *const newList0 = new List<Item>();
+            if (li->elements != fmVec.size()) {
+                TEST_TextMessageError(0 == li->elements
+                                        && NULL == lex->field_list.head(),
+                                        "size mismatch between fields"
+                                        " and values!");
+                // Query such as this.
+                // > INSERT INTO <table> () VALUES ();
+                // > INSERT INTO <table> VALUES ();
+            } else {
+                //li指向了lex->many_values的迭代内容 
+                auto it0 = List_iterator<Item>(*li);
+                auto fmVecIt = fmVec.begin();
+                
+                for (;;) {
+                    const Item *const i = it0++;
+                    assert(!!i == (fmVec.end() != fmVecIt));
+                    if (!i) {
+                        break;
+                    }
+                    //获得values中的内容,并且通过fieldMeta好帮助完成rewrite工作
+                    //每个field都要进行洋葱的加密.
+                    gettimeofday(&start, nullptr);
+                    rewriteInsertHelper(*i, **fmVecIt, a, newList0);
+                    gettimeofday(&end, nullptr);
+                    duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+                    LOG(debug) << "duration is " << duration;
+                    ++fmVecIt;
+                }
+                for (auto def_it : implicit_defaults) {
+                    newList0->push_back(def_it);
+                }
+            }
+            newList.push_back(newList0);
+        }
         
-        // 使用rewriteInsertHelper对SQL进行重写
-        //For insert, we can choose to specify field list or omit it.
-        if (lex->field_list.head()) {
-            auto it = List_iterator<Item>(lex->field_list);
-            List<Item> newList;
-            for (;;) {
-                const Item *const i = it++;
-                if (!i) {
-                    break;
-                }
-                //这下也就知道了field item是什么了
-                TEST_TextMessageError(i->type() == Item::FIELD_ITEM,
-                                      "Expected field item!");
-                const Item_field *const ifd =
-                    static_cast<const Item_field *>(i);
-                FieldMeta &fm =
-                    a.getFieldMeta(db_name, ifd->table_name,
-                                   ifd->field_name);
-                fmVec.push_back(&fm);
-                rewriteInsertHelper(*i, fm, a, &newList);
-            }
-
-            // Collect the implicit defaults.
-            // > Such must be done because fields that can not have NULL
-            // will be implicitly converted by mysql sans encryption.
-            std::vector<FieldMeta *> field_implicit_defaults =
-                vectorDifference(tm.defaultedFieldMetas(), fmVec);
-            const Item_field *const seed_item_field =
-                static_cast<Item_field *>(new_lex->field_list.head());
-            for (auto implicit_it : field_implicit_defaults) {
-                // Get default fields.
-                const Item_field *const item_field =
-                    make_item_field(*seed_item_field, table,
-                                    implicit_it->getFieldName());
-                rewriteInsertHelper(*item_field, *implicit_it, a,
-                                    &newList);
-
-                // Get default values.
-                const std::string def_value = implicit_it->defaultValue();
-                rewriteInsertHelper(*make_item_string(def_value),
-                                    *implicit_it, a, &implicit_defaults);
-            }
-            // FIXME： field_list 需要在pop的时候手动清除空间
-            new_lex->field_list = newList;
-        } else {
-            // No field list, use the table order.
-            // > Because there is no field list, fields with default
-            //   values must be explicity INSERTed so we don't have to
-            //   take any action with respect to defaults.
-            assert(fmVec.empty());
-            std::vector<FieldMeta *> fmetas = tm.orderedFieldMetas();
-            fmVec.assign(fmetas.begin(), fmetas.end());
-        }
-
-        // -----------------
-        //      Values
-        // -----------------
-        if (lex->many_values.head()) {
-            //开始处理many values
-            auto it = List_iterator<List_item>(lex->many_values);
-            List<List_item> newList;
-            for (;;) {
-                List_item *const li = it++;
-                if (!li) {
-                    break;
-                }
-                List<Item> *const newList0 = new List<Item>();
-                if (li->elements != fmVec.size()) {
-                    TEST_TextMessageError(0 == li->elements
-                                         && NULL == lex->field_list.head(),
-                                          "size mismatch between fields"
-                                          " and values!");
-                    // Query such as this.
-                    // > INSERT INTO <table> () VALUES ();
-                    // > INSERT INTO <table> VALUES ();
-                } else {
-                    //li指向了lex->many_values的迭代内容 
-                    auto it0 = List_iterator<Item>(*li);
-                    auto fmVecIt = fmVec.begin();
-                   
-                    for (;;) {
-                        const Item *const i = it0++;
-                        assert(!!i == (fmVec.end() != fmVecIt));
-                        if (!i) {
-                            break;
-                        }
-                        //获得values中的内容,并且通过fieldMeta好帮助完成rewrite工作
-                        //每个field都要进行洋葱的加密.
-                        rewriteInsertHelper(*i, **fmVecIt, a, newList0);
-                        ++fmVecIt;
-                    }
-                    for (auto def_it : implicit_defaults) {
-                        newList0->push_back(def_it);
-                    }
-                }
-                newList.push_back(newList0);
-            }
-            // FIXME： many_values 需要在pop的时候手动清除空间
-            new_lex->many_values = newList;
-        }
-
-
-        //对于普通的insert, 这部分的内容不会用到的.
-        // -----------------------
-        // ON DUPLICATE KEY UPDATE
-        // -----------------------
-        {
-            auto fd_it = List_iterator<Item>(lex->update_list);
-            auto val_it = List_iterator<Item>(lex->value_list);
-            List<Item> res_fields, res_values;
-            TEST_TextMessageError(
-                rewrite_field_value_pairs(fd_it, val_it, a, &res_fields,
-                                          &res_values),
-                "rewrite_field_value_pairs failed in ON DUPLICATE KEY"
-                " UPDATE");
-            // FIXME： update_list、value_list 需要在pop的时候手动清除空间
-            new_lex->update_list = res_fields;
-            new_lex->value_list = res_values;
-        }
-        return new DMLQueryExecutor(*new_lex, a.rmeta);
+        // many_values 在lexToQuery中回收
+        new_lex->many_values = newList;
     }
 
 
+    //对于普通的insert, 这部分的内容不会用到的.
+    // -----------------------
+    // ON DUPLICATE KEY UPDATE
+    // -----------------------
+    {
+        auto fd_it = List_iterator<Item>(lex->update_list);
+        auto val_it = List_iterator<Item>(lex->value_list);
+        List<Item> res_fields, res_values;
+        TEST_TextMessageError(
+            rewrite_field_value_pairs(fd_it, val_it, a, &res_fields,
+                                        &res_values),
+            "rewrite_field_value_pairs failed in ON DUPLICATE KEY"
+            " UPDATE");
+        // FIXME： update_list、value_list 需要在pop的时候手动清除空间
+        new_lex->update_list = res_fields;
+        new_lex->value_list = res_values;
+    }
+    return new DMLQueryExecutor(*new_lex, a.rmeta);
+}
 
+AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) const{
+    // FIXME: 此函数中对field_list和value_list 是按照顺序执行，不是多线程，严重影响性能
+    // lexToQuery 函数中对new_lex进行了回收
+    LEX *const new_lex = copyWithTHD(lex);
+    const std::string &table =
+        lex->select_lex.table_list.first->table_name;
+    const std::string &db_name =
+        lex->select_lex.table_list.first->db;
+    TEST_DatabaseDiscrepancy(db_name, a.getDatabaseName());
+    //from databasemeta to tablemeta.
+    const TableMeta &tm = a.getTableMeta(db_name, table);
+
+    //rewrite table name
+    new_lex->select_lex.table_list.first =
+        rewrite_table_list(lex->select_lex.table_list.first, a);
+
+    // -------------------------
+    // Fields (and default data)
+    // -------------------------
+    // If the fields list doesn't exist, or is empty; the 'else' of
+    // this code block will put every field into fmVec.
+    // > INSERT INTO t VALUES (1, 2, 3);
+    // > INSERT INTO t () VALUES ();
+    // FIXME: Make vector of references.
+    std::vector<FieldMeta *> fmVec;
+    std::vector<Item *> implicit_defaults;
+
+    struct timeval start, end;
+    double duration = 0;
+    LOG(debug) << "----> here here is right.";
+    
+    // 使用rewriteInsertHelper对SQL进行重写
+    // For insert, we can choose to specify field list or omit it.
+    THD* main_thd = current_thd;
+    pthread_mutex_t memRootMutex;  // 主线程资源锁
+    pthread_mutex_init(&memRootMutex, NULL);
+    
+    if (lex->field_list.head()) {
+        LOG(debug) << "----> has field list.";
+        auto it = List_iterator<Item>(lex->field_list);
+        List<Item> newList;
+        // ****************field_list rewrite 多线程处理*****************************
+        // step1. 将field_list rewrite 任务加入线程池队列，并行执行
+
+        ThreadPool thd_pool(4);
+        const ThreadPool& constThdPool = thd_pool;
+        ThreadPool& thdPool = const_cast<ThreadPool&>(constThdPool);
+
+        for (int idx=0;; idx++) {
+            const Item *const i = it++;
+            if (!i) {
+                LOG(debug) << "i is null";
+                break;
+            }
+            // 使用按值捕获，确保捕获的变量在 lambda 执行期间有效
+            auto task_func = [=, &fmVec, &a, &memRootMutex]() -> std::vector<Item*> {
+                return fieldListRewriteThdFunc(fmVec, i, db_name, a, main_thd, memRootMutex);
+            };
+
+            LOG(debug) << "----> add task to thread queue, idx = "<< idx << ", item = " << *i;
+            thdPool.addTask(ThdTask{task_func, static_cast<size_t>(idx)});
+        }
+    
+        struct timeval start, end;
+        double duration = 0;
+        gettimeofday(&start, nullptr);
+        // step2. 等待所有任务完成
+        LOG(debug) << "----> I am waiting for completion.";
+        thdPool.waitForCompletion();
+        
+        LOG(debug) << "----> sort all results and add to newList....";
+        // step3. Sort the results based on the task index
+        thdPool.getSortedResults();
+ 
+        // step4. 将所有结果加入`newList`
+        LOG(debug) << "----> add results to newList....";
+        for (const auto& result_pair : thdPool.results) {
+            const auto& result = result_pair.second;
+            for (const auto& item : result) {
+                newList.push_back(item);
+            }
+        }
+        LOG(debug) << "----> thread tasks all done.";
+        gettimeofday(&end, nullptr);
+        duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+        LOG(debug) << "----> duration is " << duration << "ms";
+        // Collect the implicit defaults.
+        // > Such must be done because fields that can not have NULL
+        // will be implicitly converted by mysql sans encryption.
+        std::vector<FieldMeta *> field_implicit_defaults =
+            vectorDifference(tm.defaultedFieldMetas(), fmVec);
+        const Item_field *const seed_item_field =
+            static_cast<Item_field *>(new_lex->field_list.head());
+            
+        for (auto implicit_it : field_implicit_defaults) {
+            // Get default fields.
+            const Item_field *const item_field =
+                make_item_field(*seed_item_field, table,
+                                implicit_it->getFieldName());
+            rewriteInsertHelper(*item_field, *implicit_it, a,
+                                &newList);
+
+            // Get default values.
+            const std::string def_value = implicit_it->defaultValue();
+            rewriteInsertHelper(*make_item_string(def_value),
+                                *implicit_it, a, &implicit_defaults);
+        }
+
+        // FIXME： field_list 需要在pop的时候手动清除空间
+        new_lex->field_list = newList;
+    } else {
+        // No field list, use the table order.
+        // > Because there is no field list, fields with default
+        //   values must be explicity INSERTed so we don't have to
+        //   take any action with respect to defaults.
+        assert(fmVec.empty());
+        std::vector<FieldMeta *> fmetas = tm.orderedFieldMetas();
+        fmVec.assign(fmetas.begin(), fmetas.end());
+    }
+
+    LOG(debug) << "----> handle value list";
+    // -----------------
+    //      Values
+    // -----------------
+    if (lex->many_values.head()) {
+        //开始处理many values
+        auto it = List_iterator<List_item>(lex->many_values);
+        List<List_item> newList;
+        for (;;) {
+            List_item *const li = it++;
+            if (!li) {
+                break;
+            }
+            List<Item> *const newList0 = new List<Item>();
+            if (li->elements != fmVec.size()) {
+                TEST_TextMessageError(0 == li->elements
+                                        && NULL == lex->field_list.head(),
+                                        "size mismatch between fields"
+                                        " and values!");
+                // Query such as this.
+                // > INSERT INTO <table> () VALUES ();
+                // > INSERT INTO <table> VALUES ();
+            } else {
+                //li指向了lex->many_values的迭代内容 
+                auto it0 = List_iterator<Item>(*li);
+                auto fmVecIt = fmVec.begin();
+                
+                for (;;) {
+                    const Item *const i = it0++;
+                    assert(!!i == (fmVec.end() != fmVecIt));
+                    if (!i) {
+                        break;
+                    }
+                    //获得values中的内容,并且通过fieldMeta好帮助完成rewrite工作
+                    //每个field都要进行洋葱的加密.
+                    gettimeofday(&start, nullptr);
+                    rewriteInsertHelper(*i, **fmVecIt, a, newList0);
+                    gettimeofday(&end, nullptr);
+                    duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+                    LOG(debug) << "duration is " << duration;
+                    ++fmVecIt;
+                }
+                
+                for (auto def_it : implicit_defaults) {
+                    newList0->push_back(def_it);
+                }
+            }
+            newList.push_back(newList0);
+        }
+        
+        // many_values 在lexToQuery中回收
+        new_lex->many_values = newList;
+    }
+
+    //对于普通的insert, 这部分的内容不会用到的.
+    // -----------------------
+    // ON DUPLICATE KEY UPDATE
+    // -----------------------
+    {
+        auto fd_it = List_iterator<Item>(lex->update_list);
+        auto val_it = List_iterator<Item>(lex->value_list);
+        List<Item> res_fields, res_values;
+        TEST_TextMessageError(
+            rewrite_field_value_pairs(fd_it, val_it, a, &res_fields,
+                                        &res_values),
+            "rewrite_field_value_pairs failed in ON DUPLICATE KEY"
+            " UPDATE");
+        // FIXME： update_list、value_list 需要在pop的时候手动清除空间
+        new_lex->update_list = res_fields;
+        new_lex->value_list = res_values;
+    }
+    
+    return new DMLQueryExecutor(*new_lex, a.rmeta); 
+}
 
 class UpdateHandler : public DMLHandler {
     virtual void gather(Analysis &a, LEX *lex) const {
@@ -711,7 +955,7 @@ rewrite_select_lex(const st_select_lex &select_lex, Analysis &a)
     // rewrite_proj uses.
     st_select_lex *const new_select_lex = rewrite_filters_lex(select_lex, a);
 
-    // // LOG(cdb_v) << "rewrite select lex input is "
+    // LOG(cdb_v) << "rewrite select lex input is "
     //            << select_lex << std::endl;
     auto item_it =
         RiboldMYSQL::constList_iterator<Item>(select_lex.item_list);
@@ -723,7 +967,7 @@ rewrite_select_lex(const st_select_lex &select_lex, Analysis &a)
         const Item *const item = item_it++;
         if (!item)
             break;
-        // // LOG(cdb_v) << "rewrite_select_lex " << *item << " with name "
+        // LOG(cdb_v) << "rewrite_select_lex " << *item << " with name "
         //            << item->name << std::endl;
         rewrite_proj(*item,
                      *constGetAssert(a.rewritePlans, item).get(),

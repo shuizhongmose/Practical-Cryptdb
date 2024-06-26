@@ -124,14 +124,14 @@ EncSet::chooseOne() const {
                 /*
                  * If no key, skip this OLK.
                  */
-                // LOG(warn) << "\tno key, skip this OLK";
+                LOG(warn) << "\tno key, skip this OLK";
                 continue;
             }
             // LOG(debug) << "return OLK ("<< o << ")";
             return OLK(o, it->second.first, it->second.second);
         }
     }
-    // LOG(warn) << "\treturn invalidOLK";
+    LOG(warn) << "\treturn invalidOLK";
     return OLK::invalidOLK();
 }
 
@@ -344,7 +344,7 @@ loadUDFs(const std::unique_ptr<Connect> &conn) {
     createAll(conn);
     assert(lowLevelSetCurrentDatabase(conn, saved_db));
 
-    // LOG(cdb_v) << "Loaded CryptDB's UDFs.";
+    LOG(cdb_v) << "Loaded CryptDB's UDFs.";
 }
 
 static bool
@@ -476,10 +476,7 @@ void ProxyState::dumpTHDs()
 {
     // // DELETE: thds.clear()即可清理线程信息了，并且it.release() 会释放内存管理权限，还会造成泄露
     // for (auto &it: thds) {
-    //     // THD* raw_ptr = it.release();
-    //     // // LOG(debug) << "clear thread ("<< raw_ptr <<") in dumpTHDs";
-    //     // LOG(debug) << "clear thread ("<< it.get() <<") in dumpTHDs";
-    //     // embeddedTHDCleanup(raw_ptr);
+    //     LOG(debug) << "clear thread ("<< it.get() <<") in dumpTHDs";
     // }
     thds.clear();
 

@@ -43,7 +43,9 @@ Item_field *dup_item(const Item_field &i);
 
 Item_field *make_item_field(const Item_field &t,
                             const std::string &table_name = "",
-                            const std::string &field_name = "");
+                            const std::string &field_name = "",
+                            THD* thd=nullptr, 
+                            pthread_mutex_t *memRootMutex=nullptr);
 Item_ref *make_item_ref(const Item_ref &t, Item *const new_ref,
                         const std::string &table_name = "",
                         const std::string &field_name = "");

@@ -1370,6 +1370,8 @@ Rewriter::rewrite(const std::string &q, const SchemaInfo &schema,
 {
     // LOG(cdb_v) << "q " << q;
     assert(0 == mysql_thread_init());
+    
+    // LOG(debug) << ">>>>>>>>>> current_thd in Rewriter::rewrite =" << current_thd;
 
     Analysis analysis(default_db, schema, ps.getMasterKey(),
                       ps.defaultSecurityRating());

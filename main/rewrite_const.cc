@@ -74,9 +74,11 @@ static class ANON : public CItemSubtypeIT<Item_string,
 
     virtual void
     do_rewrite_insert_type(const Item_string &i, const FieldMeta &fm,
-                           Analysis &a, std::vector<Item *> *l) const
+                           Analysis &a, std::vector<Item *> *l,
+                           THD* thd=nullptr, 
+                           pthread_mutex_t *memRootMutex=nullptr) const
     {
-        typical_rewrite_insert_type(i, fm, a, l);
+        typical_rewrite_insert_type(i, fm, a, l, thd);
     }
 } ANON;
 
@@ -101,9 +103,11 @@ static class ANON : public CItemSubtypeIT<Item_float,
 
     virtual void
     do_rewrite_insert_type(const Item_float &i, const FieldMeta &fm,
-                           Analysis &a, std::vector<Item *> *l) const
+                           Analysis &a, std::vector<Item *> *l,
+                           THD* thd=nullptr, 
+                           pthread_mutex_t *memRootMutex=nullptr) const
     {
-        typical_rewrite_insert_type(i, fm, a, l);
+        typical_rewrite_insert_type(i, fm, a, l, thd);
     }
 } ANON;
 
@@ -134,9 +138,11 @@ static class ANON : public CItemSubtypeIT<Item_int, Item::Type::INT_ITEM> {
 
     virtual void
     do_rewrite_insert_type(const Item_int &i, const FieldMeta &fm,
-                           Analysis &a, std::vector<Item *> *l) const
+                           Analysis &a, std::vector<Item *> *l,
+                           THD* thd=nullptr, 
+                           pthread_mutex_t *memRootMutex=nullptr) const
     {
-        typical_rewrite_insert_type(i, fm, a, l);
+        typical_rewrite_insert_type(i, fm, a, l, thd);
     }
 } ANON;
 
@@ -168,8 +174,10 @@ static class ANON : public CItemSubtypeIT<Item_decimal,
 
     virtual void
     do_rewrite_insert_type(const Item_decimal &i, const FieldMeta &fm,
-                           Analysis &a, std::vector<Item *> *l) const
+                           Analysis &a, std::vector<Item *> *l,
+                           THD* thd=nullptr, 
+                           pthread_mutex_t *memRootMutex=nullptr) const
     {
-        typical_rewrite_insert_type(i, fm, a, l);
+        typical_rewrite_insert_type(i, fm, a, l, thd);
     }
 } ANON;

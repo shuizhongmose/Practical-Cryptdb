@@ -41,7 +41,7 @@ public:
     bool success() const {return this->ok;}
 };
 
-char * make_thd_string(const std::string &s, size_t *lenp = 0);
+char * make_thd_string(const std::string &s, size_t *lenp = 0, THD* thd=nullptr);
 
 std::string ItemToString(const Item &i);
 std::string printItemToString(const Item &i);

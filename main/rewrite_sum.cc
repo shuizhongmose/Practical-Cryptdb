@@ -390,7 +390,9 @@ static class ANON : public CItemSubtypeIT<Item_null, Item::Type::NULL_ITEM> {
 
     virtual void
     do_rewrite_insert_type(const Item_null &i, const FieldMeta &fm,
-                           Analysis &a, std::vector<Item *> *l) const
+                           Analysis &a, std::vector<Item *> *l,
+                           THD* thd=nullptr, 
+                           pthread_mutex_t *memRootMutex=nullptr) const
     {
         for (uint j = 0; j < fm.getChildren().size(); ++j) {
             l->push_back(RiboldMYSQL::clone_item(i));

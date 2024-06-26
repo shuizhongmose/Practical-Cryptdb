@@ -109,7 +109,9 @@ class CItemType {
         const = 0;
     virtual void do_rewrite_insert(const Item &, const FieldMeta &fm,
                                    Analysis &,
-                                   std::vector<Item *> *) const = 0;
+                                   std::vector<Item *> *, 
+                                   THD* thd=nullptr, 
+                                   pthread_mutex_t *memRootMutex=nullptr) const = 0;
 };
 
 /*
@@ -138,9 +140,13 @@ class CItemSubtype : public CItemType {
 
     virtual void do_rewrite_insert(const Item &i, const FieldMeta &fm,
                                    Analysis &a,
-                                   std::vector<Item *> *l) const
+                                   std::vector<Item *> *l, 
+                                   THD* thd=nullptr, 
+                                   pthread_mutex_t *memRootMutex=nullptr) const
     {
-        do_rewrite_insert_type(static_cast<const T &>(i), fm, a, l);
+        // std::cout << "main/rewrite_main.hh:147 begin do_rewrite_insert_type"<<std::endl;
+        do_rewrite_insert_type(static_cast<const T &>(i), fm, a, l, thd, memRootMutex);
+        // std::cout << "main/rewrite_main.hh:149 finish do_rewrite_insert_type" << std::endl ;
     }
 
  private:
@@ -164,7 +170,9 @@ class CItemSubtype : public CItemType {
 
     virtual void do_rewrite_insert_type(const T &i, const FieldMeta &fm,
                                         Analysis &a,
-                                        std::vector<Item *> *l) const
+                                        std::vector<Item *> *l,
+                                        THD* thd=nullptr, 
+                                        pthread_mutex_t *memRootMutex=nullptr) const
     {
         UNIMPLEMENTED;
     }
@@ -205,9 +213,13 @@ class CItemTypeDir : public CItemType {
     }
 
     void do_rewrite_insert(const Item &i, const FieldMeta &fm,
-                           Analysis &a, std::vector<Item *> *l) const
+                           Analysis &a, std::vector<Item *> *l,
+                           THD* thd=nullptr, 
+                           pthread_mutex_t *memRootMutex=nullptr) const
     {
-        lookup(i).do_rewrite_insert(i, fm, a, l);
+        // std::cout << "main/rewrite_main.hh:220 begin do_rewrite_insert ......"<<std::endl;
+        lookup(i).do_rewrite_insert(i, fm, a, l, thd, memRootMutex);
+        // std::cout << "main/rewrite_main.hh:222 do_rewrite_insert done"<<std::endl;
     }
 
 protected:

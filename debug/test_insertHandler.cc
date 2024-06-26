@@ -46,7 +46,7 @@ static void myTestCreateTableHandler(std::string query){
     loadChildren(schema.get()); 
     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
     //just like what we do in Rewrite::rewrite,dispatchOnLex
-    Analysis analysis(std::string("tdb"),*schema,TK,
+    Analysis analysis(std::string("sbtest"),*schema,TK,
                         SECURITY_RATING::SENSITIVE);
     //assert(analysis.getMasterKey().get()!=NULL);
     //assert(getKey(std::string("113341234"))!=NULL);
@@ -56,10 +56,10 @@ static void myTestCreateTableHandler(std::string query){
 
     std::unique_ptr<query_parse> p;
     p = std::unique_ptr<query_parse>(
-                new query_parse("tdb", query));
+                new query_parse("sbtest", query));
     LEX *const lex = p->lex();
     auto executor = h->transformLex(analysis,lex);
-    std::cout<<  ((DMLQueryExecutor*)executor)->getQuery()<<std::endl;
+    // std::cout<<  ((DMLQueryExecutor*)executor)->getQuery()<<std::endl;
 
 }
 
@@ -71,10 +71,10 @@ main() {
     }
     embeddedDir = std::string(buffer)+"/shadow";
     const std::string master_key = "113341234";
-    ConnectionInfo ci("localhost", "root", "letmein",3306);
+    ConnectionInfo ci("localhost", "root", "letmein", 3306);
     SharedProxyState *shared_ps = new SharedProxyState(ci, embeddedDir , master_key, determineSecurityRating());
     assert(shared_ps!=NULL);
-    std::string query1 = "insert into student values(1,\"zhangfei\")";
+    std::string query1 = "INSERT INTO user (name, age) VALUES ('alice', 19), ('bob', 20), ('chris', 21);";
     std::vector<std::string> querys{query1};
     for(auto item:querys){
         std::cout<<item<<std::endl;

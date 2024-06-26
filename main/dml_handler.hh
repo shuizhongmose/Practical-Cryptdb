@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <main/thread_pool.hh>
 
 #include <main/Analysis.hh>
 #include <main/sql_handler.hh>
@@ -136,11 +137,18 @@ protected:
 };
 
 class InsertHandler : public DMLHandler {
+private:
     virtual void gather(Analysis &a, LEX *const lex)const;
+    virtual AbstractQueryExecutor *rewrite_bk(Analysis &a, LEX *const lex)const;
     virtual AbstractQueryExecutor *rewrite(Analysis &a, LEX *const lex)const;
+
+    // // ADD: 使用并行多线程进行改写
+    // std::vector<Item *>  fieldListRewriteThdFunc(std::vector<FieldMeta *> &fmVec, 
+    //                     const Item *const i, std::string db_name, Analysis &a,
+    //                     THD* holdThd, pthread_mutex_t &memRootMutex) const;
+    // std::vector<Item *> valuesRewriteThd(std::vector<FieldMeta *> &fmVec, 
+    //                     const Item *const i, std::string db_name, Analysis &a) const;
 };
-
-
 
 SQLDispatcher *buildDMLDispatcher();
 

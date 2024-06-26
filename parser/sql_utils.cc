@@ -40,13 +40,13 @@ init_mysql(const string &embed_db){
 }
 
 char *
-make_thd_string(const string &s, size_t *lenp){
-    // LOG(debug) << "-------- current_thd in make_thd_string =" << current_thd;
-    THD *thd = current_thd;
-    assert(thd);
+make_thd_string(const string &s, size_t *lenp, THD* thd){
+    THD *newThd = thd ? thd : current_thd;
+    // std::cout << "parser/sql_util.cc:45 current_thd in make_thd_string =" << newThd << std::endl;
+    assert(newThd);
     if (lenp)
         *lenp = s.size();
-    return thd->strmake(s.data(), s.size());
+    return newThd->strmake(s.data(), s.size());
 }
 
 string

@@ -2,10 +2,10 @@ OBJDIRS	+= main
 
 CRYPTDB_SRCS := schema.cc Translator.cc Connect.cc \
 		Analysis.cc CryptoHandlers.cc rewrite_util.cc \
-		rewrite_field.cc dispatcher.cc sql_handler.cc dml_handler.cc \
+		rewrite_field.cc dispatcher.cc sql_handler.cc thread_pool.cc dml_handler.cc \
 		ddl_handler.cc alter_sub_handler.cc rewrite_const.cc \
 		rewrite_func.cc rewrite_sum.cc metadata_tables.cc \
-		error.cc stored_procedures.cc rewrite_ds.cc rewrite_main.cc big_proxy.cc
+		error.cc stored_procedures.cc rewrite_ds.cc rewrite_main.cc big_proxy.cc		
 
 CRYPTDB_PROGS:= cdb_test load_and_store test_layer test_schema test_proxy change_test
 
@@ -32,10 +32,10 @@ $(OBJDIR)/libcryptdb.so: $(CRYPTDB_OBJS) \
 
 
 
-#install: install_main
+install: install_main
 
-#.PHONY: install_main
-#install_main: $(OBJDIR)/libcryptdb.so
-#	install -m 644 $(OBJDIR)/libcryptdb.so /usr/lib
+.PHONY: install_main
+install_main: $(OBJDIR)/libcryptdb.so
+	install -m 644 $(OBJDIR)/libcryptdb.so /usr/lib
 
 # vim: set noexpandtab:

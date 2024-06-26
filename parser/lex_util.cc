@@ -97,32 +97,41 @@ dup_item(const Item &i)
 
 static void
 init_new_ident(Item_ident *const i, const std::string &table_name,
-               const std::string &field_name)
+               const std::string &field_name, THD* thd=nullptr, 
+               pthread_mutex_t *memRootMutex=nullptr)
 {
     assert(!table_name.empty() && !field_name.empty());
-
+    
     // clear out alias
     i->name = NULL;
-
-    i->table_name = make_thd_string(table_name);
-    i->field_name = make_thd_string(field_name);
+    
+    if(memRootMutex) { pthread_mutex_lock(memRootMutex); }
+    i->table_name = make_thd_string(table_name, 0, thd);
+    i->field_name = make_thd_string(field_name, 0, thd);
+    if (memRootMutex) {pthread_mutex_unlock(memRootMutex);}
 }
 
 Item_field *
 make_item_field(const Item_field &i, const std::string &table_name,
-                const std::string &field_name)
+                const std::string &field_name, THD* thd, pthread_mutex_t *memRootMutex)
 {
     assert(i.type() == Item::Type::FIELD_ITEM);
+    THD * newThd = thd? thd:current_thd;
+    // std::cout << "parser/lex_util.cc:120 current_thd =" << newThd << std::endl;
+    assert(newThd);
+    assert(newThd->mem_root);
 
-    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/make_item_field =" << current_thd;;
-    assert(current_thd);
-
+    if(memRootMutex) { pthread_mutex_lock(memRootMutex); }
+    // std::cout << "parser/lex_util.cc:125 new Item field ...." << std::endl;
     Item_field *const i0 =
-        new (current_thd->mem_root)
-            Item_field(current_thd, &const_cast<Item_field &>(i));
+        new (newThd->mem_root)
+            Item_field(newThd, &const_cast<Item_field &>(i));
+    // std::cout << "parser/lex_util.cc:129 new Item field done" << std::endl;
+    if (memRootMutex) {pthread_mutex_unlock(memRootMutex);}
+    
+    init_new_ident(i0, table_name, field_name, thd);
 
-    init_new_ident(i0, table_name, field_name);
-
+    // std::cout << "parser/lex_util.cc:134 return new item" << std::endl;
     return i0;
 }
 

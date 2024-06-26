@@ -149,8 +149,11 @@ class ANON : public CItemSubtypeIT<Item_field, Item::Type::FIELD_ITEM> {
 
     virtual void
     do_rewrite_insert_type(const Item_field &i, const FieldMeta &fm,
-                           Analysis &a, std::vector<Item *> *l) const
+                           Analysis &a, std::vector<Item *> *l,
+                           THD* thd=nullptr, 
+                           pthread_mutex_t *memRootMutex=nullptr) const
     {
+        // std::cout << "main/rewrite_field.cc:156 current thd =" << thd << std::endl;
         const std::string anon_table_name =
             a.getAnonTableName(a.getDatabaseName(), i.table_name);
 
@@ -158,15 +161,17 @@ class ANON : public CItemSubtypeIT<Item_field, Item::Type::FIELD_ITEM> {
         for (auto it : fm.orderedOnionMetas()) {
             const std::string anon_field_name =
                 it.second->getAnonOnionName();
+            // std::cout << "main/rewrite_field.cc:164 get new item for field name, name = " << anon_field_name << std::endl;
             new_field =
-                make_item_field(i, anon_table_name, anon_field_name);
+                make_item_field(i, anon_table_name, anon_field_name, thd, memRootMutex);
             l->push_back(new_field);
         }
         if (fm.getHasSalt()) {
+            // std::cout << "main/rewrite_field.cc:170 set sault ...." << std::endl;
             assert(new_field); // need an anonymized field as template to
                                // create salt item
             l->push_back(make_item_field(*new_field, anon_table_name,
-                                  fm.getSaltName()));
+                                  fm.getSaltName(), thd, memRootMutex));
         }
     }
 } ANON;

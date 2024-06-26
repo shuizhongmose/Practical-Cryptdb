@@ -126,7 +126,7 @@ xlua_pushlstring(lua_State *const l, const std::string &s)
 static int
 connect(lua_State *const L) {
     // LOG(debug)  << ">>>>>>>>>>> current_thd in connect =" << current_thd;
-//TODO: added, why test here?
+    //TODO: added, why test here?
     assert(test64bitZZConversions());
 
     ANON_REGION(__func__, &perf_cg);

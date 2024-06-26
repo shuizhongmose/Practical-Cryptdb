@@ -301,18 +301,11 @@ MappedDBMeta<ChildType, KeyType>::getChild(const KeyType &key) const
     //     }
     // }
     // ADD: improve find speed
-    // LOG(debug) << "----------------------------------";
-    // LOG(debug) << "key type is " << typeName() << ", and value is <" << key.getValue() << ">";
-    // LOG(debug) << "children size = " << children.size() << " and children are: ";
-    // for (const auto &it : children) {
-    //     LOG(debug) << "\tchildren key value is <" << it.first.getValue() << ">"; 
-    // }
     auto it = children.find(key);
     if (it != children.end()) {
-        // LOG(debug) << "get key";
         return it->second.get();
     }
-    // LOG(debug) << "return NULL";
+    LOG(warn) << "return NULL";
     return NULL;
 }
 

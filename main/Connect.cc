@@ -103,7 +103,7 @@ Connect::execute(const std::string &query, std::unique_ptr<DBResult> *res,
 {
     //silently ignore empty queries
     if (query.length() == 0) {
-        // LOG(debug) << "empty query";
+        LOG(warn) << "empty query";
         *res = nullptr;
         return true;
     }
