@@ -62,7 +62,7 @@ public:
         newCreateField(const Create_field &cf,
                        const std::string &anonname = "") const = 0;
 
-    virtual Item *encrypt(const Item &ptext, uint64_t IV) const = 0;
+    virtual Item *encrypt(const Item &ptext, uint64_t IV, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr) const = 0;
     virtual Item *decrypt(const Item &ctext, uint64_t IV) const = 0;
 
     // returns the decryptUDF to remove the onion layer
@@ -99,7 +99,7 @@ public:
         const;
 
     //TODO needs multi encrypt and decrypt
-    Item *encrypt(const Item &p, uint64_t IV) const;
+    Item *encrypt(const Item &p, uint64_t IV, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr) const;
     Item * decrypt(const Item &c, uint64_t IV) const;
 
     //expr is the expression (e.g. a field) over which to sum
@@ -131,7 +131,7 @@ public:
                                   const std::string &anonname = "")
         const;
 
-    Item *encrypt(const Item &ptext, uint64_t IV) const;
+    Item *encrypt(const Item &ptext, uint64_t IV, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr) const;
     Item * decrypt(const Item &ctext, uint64_t IV) const
         __attribute__((noreturn));
 
@@ -170,7 +170,7 @@ public:
     virtual Create_field *newCreateField(const Create_field &cf,
                                          const std::string &anonname = "")
         const;
-    Item *encrypt(const Item &ptext, uint64_t IV) const;
+    Item *encrypt(const Item &ptext, uint64_t IV, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr) const;
     Item *decrypt(const Item &ctext, uint64_t IV) const;
     Item *decryptUDF(Item * const col, Item * const ivcol = NULL)
         const __attribute__((noreturn));

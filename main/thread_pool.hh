@@ -34,6 +34,9 @@ public:
     void waitForCompletion();
     void getSortedResults();
     bool setStop();
+    void clearResults();
+    void restart();
+
 
 private:
     pthread_mutex_t stop_mutex;

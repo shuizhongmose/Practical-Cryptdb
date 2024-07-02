@@ -14,6 +14,14 @@ ThreadPool::ThreadPool(unsigned long num_threads) : stop(false) {
 
 ThreadPool::~ThreadPool() {
     waitForCompletion();
+    // clear all queue and list
+    for (auto& pair : results) {
+        pair.second.clear();
+    }
+    results.clear();
+    task_queue.clear();
+    workers.clear();
+    
     pthread_cond_destroy(&queue_cond);
     pthread_mutex_destroy(&queue_mutex);
     pthread_mutex_destroy(&stop_mutex);
@@ -30,22 +38,29 @@ void ThreadPool::worker() {
     while (true) {
         pthread_mutex_lock(&queue_mutex);
         while (task_queue.empty() && !stop) {
+            // LOG(debug) << "Waiting for call up";
             pthread_cond_wait(&queue_cond, &queue_mutex);
         }
         if (stop && task_queue.empty()) {
             pthread_mutex_unlock(&queue_mutex);
+            // LOG(debug) << "finish task and return";
             return;
         }
         ThdTask task = std::move(task_queue.front());
         task_queue.pop_front();
         pthread_mutex_unlock(&queue_mutex);
-        // std::cout << "begin to run task func ......";
         if(task.func) {
-            std::vector<Item *> result = task.func();
-            // std::cout << "Ohoo, run task done";
-            pthread_mutex_lock(&queue_mutex);
-            results.push_back(std::make_pair(task.index, result));
-            pthread_mutex_unlock(&queue_mutex);
+            try {
+                // LOG(debug) << "begin to run task func ......";
+                std::vector<Item *> result = task.func();
+                pthread_mutex_lock(&queue_mutex);
+                results.push_back(std::make_pair(task.index, result));
+                // LOG(debug) << "Oh yeah, run task done and push result";
+                pthread_mutex_unlock(&queue_mutex);
+            } catch  (const std::exception &e) {
+                 LOG(error) << "Exception in task.func: " << e.what();
+                continue; // Skip to next iteration
+            }
         } else {
             LOG(error) << "Thread " << task.index << " is null";
         }
@@ -77,4 +92,25 @@ bool ThreadPool::setStop() {
     stop = true;
     pthread_mutex_unlock(&stop_mutex);
     return stop;
+}
+
+void ThreadPool::clearResults() {
+    pthread_mutex_lock(&queue_mutex);
+    for (auto& pair : results) {
+        pair.second.clear();
+    }
+    results.clear();
+    pthread_mutex_unlock(&queue_mutex);
+}
+
+void ThreadPool::restart(){
+    pthread_mutex_lock(&stop_mutex);
+    stop = false;
+    pthread_mutex_unlock(&stop_mutex);
+
+    for (size_t i = 0; i < workers.size(); ++i) {
+        pthread_t thread;
+        pthread_create(&thread, NULL, workerWrapper, this);
+        workers[i] = thread;
+    }
 }

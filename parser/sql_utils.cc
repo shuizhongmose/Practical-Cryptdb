@@ -42,7 +42,7 @@ init_mysql(const string &embed_db){
 char *
 make_thd_string(const string &s, size_t *lenp, THD* thd){
     THD *newThd = thd ? thd : current_thd;
-    // std::cout << "parser/sql_util.cc:45 current_thd in make_thd_string =" << newThd << std::endl;
+    // LOG(debug) << "current_thd =" << newThd;
     assert(newThd);
     if (lenp)
         *lenp = s.size();

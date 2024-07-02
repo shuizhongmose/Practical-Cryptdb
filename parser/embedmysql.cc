@@ -25,34 +25,35 @@ extern "C" void *create_embedded_thd(int client_flag);
 void
 query_parse::cleanup() {
     if (t) {
-        // LOG(debug) << "-------- close current_thd (" << current_thd << ") in query_parse::cleanup";
+        // LOG(debug) << "-------- close current_thd (" << t << ") in query_parse::cleanup";
 
-        // 获取并清理LEX对象
-        LEX *lex = t->lex;
-        if (lex) {
-            lex->unit.cleanup();  // 清理LEX单位
-            lex->destroy_query_tables_list();  // 销毁查询表列表
-        }
+        // // 获取并清理LEX对象
+        // LEX *lex = t->lex;
+        // if (lex) {
+        //     lex->unit.cleanup();  // 清理LEX单位
+        //     lex->destroy_query_tables_list();  // 销毁查询表列表
+        // }
 
-        // 清理语句和查询后的内容
-        t->end_statement();
-        t->cleanup_after_query();
+        // // 清理语句和查询后的内容
+        // t->end_statement();
+        // t->cleanup_after_query();
 
-        // 关闭线程表
-        close_thread_tables(t);
+        // // 关闭线程表
+        // close_thread_tables(t);
 
-        // 释放事务锁
-        t->mdl_context.release_transactional_locks();
+        // // 释放事务锁
+        // t->mdl_context.release_transactional_locks();
 
-        // 结束MySQL线程
-        mysql_thread_end();
+        // // 结束MySQL线程
+        // mysql_thread_end();
 
-        // 删除THD对象
-        delete t;
-        t = nullptr;  // 设置指针为nullptr防止悬空指针
+        // // 删除THD对象
+        // delete t;
+        // t = nullptr;  // 设置指针为nullptr防止悬空指针
 
-        // 减少线程计数
-        --thread_count;
+        // // 减少线程计数
+        // --thread_count;
+        t->cleanup();
     }
 }
 

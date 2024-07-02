@@ -32,14 +32,14 @@ T *copyWithTHD(const T *const x) {
 
 /* Makes a new item based on
  * information from an old item */
-Item_string *dup_item(const Item_string &i);
-Item_int *dup_item(const Item_int &i);
-Item_null *dup_item(const Item_null &i);
-Item_func *dup_item(const Item_func &i);
-Item_decimal *dup_item(const Item_decimal &i);
-Item *dup_item(const Item &i);
-Item_float *dup_item(const Item_float &i);
-Item_field *dup_item(const Item_field &i);
+Item_string *dup_item(const Item_string &i, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr);
+Item_int *dup_item(const Item_int &i, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr);
+Item_null *dup_item(const Item_null &i, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr);
+Item_func *dup_item(const Item_func &i, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr);
+Item_decimal *dup_item(const Item_decimal &i, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr);
+Item *dup_item(const Item &i, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr);
+Item_float *dup_item(const Item_float &i, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr);
+Item_field *dup_item(const Item_field &i, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr);
 
 Item_field *make_item_field(const Item_field &t,
                             const std::string &table_name = "",
@@ -50,6 +50,7 @@ Item_ref *make_item_ref(const Item_ref &t, Item *const new_ref,
                         const std::string &table_name = "",
                         const std::string &field_name = "");
 Item_string *make_item_string(const std::string &s);
+
 Item_insert_value *make_item_insert_value(const Item_insert_value &i,
                                           Item_field *const field);
 ORDER *make_order(const ORDER *const old_order, Item *const i);

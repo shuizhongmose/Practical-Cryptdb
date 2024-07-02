@@ -63,24 +63,26 @@ void rewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
     }
 }
 
+//**********************************************************************************/
+// 多线程处理相关函数
+//**********************************************************************************/
+
 std::vector<Item *> rewriteInsertHelper2(const Item &i, const FieldMeta &fm, Analysis &a,
                         THD* holdThd, pthread_mutex_t *memRootMutex)
 {
-    // std::cout << "main/dml_handler.cc:69 begin rewriteInsertHelper2 ......" << std::endl;
+    // LOG(debug) << "begin rewriteInsertHelper2, holdThd = " << holdThd << ", memRootMutex = " << memRootMutex;
     std::vector<Item *> l;
     //这里先做lookup, 找到类以后调用内部的结果, 试试
     //对于普通的student操作, 最后调用的是ANON的typical_rewrite_insert_type来进行重写.
     itemTypes.do_rewrite_insert(i, fm, a, &l, holdThd, memRootMutex);
-    // std::cout << "main/dml_handler.cc:74 finish rewriteInsertHelper2" << std::endl;
+    // LOG(debug) << "finish rewriteInsertHelper2";
     return l;
 }
 
-
-///////////////// ADD: rewrite 线程处理函数 //////////////////////////
 std::vector<Item *> fieldListRewriteThdFunc(std::vector<FieldMeta *> &fmVec, 
                         const Item *const i, std::string db_name, Analysis &a,
                         THD* holdThd, pthread_mutex_t &memRootMutex) {
-    // std::cout << "main/dml_handler.cc:83 A ha, I am in fieldListRewriteThdFunc ...." << std::endl;
+    // LOG(debug) << "begin fieldListRewriteThdFunc i = " << i;
     TEST_TextMessageError(i->type() == Item::FIELD_ITEM,
                             "Expected field item!");
     const Item_field *const ifd =
@@ -92,16 +94,20 @@ std::vector<Item *> fieldListRewriteThdFunc(std::vector<FieldMeta *> &fmVec,
     pthread_mutex_unlock(&memRootMutex);
 
     auto newFiledList = rewriteInsertHelper2(*i, fm, a, holdThd, &memRootMutex);
+    // LOG(debug) << "finish fieldListRewriteThdFunc";
     return newFiledList;
 }
 
-std::vector<Item *> valuesRewriteThd(std::vector<FieldMeta *> &fmVec, 
-                        const Item *const i, std::string db_name, Analysis &a) {
-    // TODO:
-    std::vector<Item *> newValList;
+std::vector<Item *> valuesRewriteThdFunc(const FieldMeta &fm, 
+                        const Item &i, Analysis &a,
+                        THD* holdThd, pthread_mutex_t &memRootMutex) {
+    // LOG(debug) << "begin valuesRewriteThdFunc i = " << i <<", holdThd = " << holdThd << ", memRootMutex = " << &memRootMutex;
+    auto newValList = rewriteInsertHelper2(i, fm, a, holdThd, &memRootMutex);
+    // LOG(debug) << "finish valuesRewriteThdFunc";
     return newValList;
 }
-///////////////// end: rewrite 线程处理函数 //////////////////////////
+//**********************************************************************************/
+//**********************************************************************************/
 
 void InsertHandler::gather(Analysis &a, LEX *const lex) const {
         //only select xxx etc?不是的!!!
@@ -307,7 +313,7 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
 
     struct timeval start, end;
     double duration = 0;
-    LOG(debug) << "----> here here is right.";
+    // LOG(debug) << "----> here here is right.";
     
     // 使用rewriteInsertHelper对SQL进行重写
     // For insert, we can choose to specify field list or omit it.
@@ -315,21 +321,21 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
     pthread_mutex_t memRootMutex;  // 主线程资源锁
     pthread_mutex_init(&memRootMutex, NULL);
     
+    ThreadPool thd_pool(1);
+    const ThreadPool& constThdPool = thd_pool;
+    ThreadPool& thdPool = const_cast<ThreadPool&>(constThdPool);
+
     if (lex->field_list.head()) {
-        LOG(debug) << "----> has field list.";
+        // LOG(debug) << "----> has field list.";
         auto it = List_iterator<Item>(lex->field_list);
         List<Item> newList;
         // ****************field_list rewrite 多线程处理*****************************
         // step1. 将field_list rewrite 任务加入线程池队列，并行执行
 
-        ThreadPool thd_pool(4);
-        const ThreadPool& constThdPool = thd_pool;
-        ThreadPool& thdPool = const_cast<ThreadPool&>(constThdPool);
-
         for (int idx=0;; idx++) {
             const Item *const i = it++;
             if (!i) {
-                LOG(debug) << "i is null";
+                // LOG(debug) << "i is null";
                 break;
             }
             // 使用按值捕获，确保捕获的变量在 lambda 执行期间有效
@@ -337,7 +343,7 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
                 return fieldListRewriteThdFunc(fmVec, i, db_name, a, main_thd, memRootMutex);
             };
 
-            LOG(debug) << "----> add task to thread queue, idx = "<< idx << ", item = " << *i;
+            // LOG(debug) << "----> add task to thread queue, idx = "<< idx << ", item = " << *i;
             thdPool.addTask(ThdTask{task_func, static_cast<size_t>(idx)});
         }
     
@@ -345,25 +351,27 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
         double duration = 0;
         gettimeofday(&start, nullptr);
         // step2. 等待所有任务完成
-        LOG(debug) << "----> I am waiting for completion.";
+        // LOG(debug) << "----> I am waiting for completion.";
         thdPool.waitForCompletion();
         
-        LOG(debug) << "----> sort all results and add to newList....";
+        // LOG(debug) << "----> sort all results and add to newList....";
         // step3. Sort the results based on the task index
         thdPool.getSortedResults();
  
         // step4. 将所有结果加入`newList`
-        LOG(debug) << "----> add results to newList....";
+        // LOG(debug) << "----> add results to newList....";
         for (const auto& result_pair : thdPool.results) {
             const auto& result = result_pair.second;
             for (const auto& item : result) {
                 newList.push_back(item);
             }
         }
-        LOG(debug) << "----> thread tasks all done.";
+        thdPool.clearResults();
+        // LOG(debug) << "----> thread tasks all done.";
         gettimeofday(&end, nullptr);
         duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-        LOG(debug) << "----> duration is " << duration << "ms";
+        // LOG(debug) << "----> duration is " << duration << "ms";
+        
         // Collect the implicit defaults.
         // > Such must be done because fields that can not have NULL
         // will be implicitly converted by mysql sans encryption.
@@ -398,7 +406,7 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
         fmVec.assign(fmetas.begin(), fmetas.end());
     }
 
-    LOG(debug) << "----> handle value list";
+    // LOG(debug) << "----> handle value list";
     // -----------------
     //      Values
     // -----------------
@@ -407,6 +415,7 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
         auto it = List_iterator<List_item>(lex->many_values);
         List<List_item> newList;
         for (;;) {
+            gettimeofday(&start, nullptr);
             List_item *const li = it++;
             if (!li) {
                 break;
@@ -424,8 +433,9 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
                 //li指向了lex->many_values的迭代内容 
                 auto it0 = List_iterator<Item>(*li);
                 auto fmVecIt = fmVec.begin();
-                
-                for (;;) {
+                // 重新启动多线程
+                thdPool.restart();
+                for (int idx=0;;idx++) {
                     const Item *const i = it0++;
                     assert(!!i == (fmVec.end() != fmVecIt));
                     if (!i) {
@@ -433,19 +443,46 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
                     }
                     //获得values中的内容,并且通过fieldMeta好帮助完成rewrite工作
                     //每个field都要进行洋葱的加密.
-                    gettimeofday(&start, nullptr);
-                    rewriteInsertHelper(*i, **fmVecIt, a, newList0);
-                    gettimeofday(&end, nullptr);
-                    duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-                    LOG(debug) << "duration is " << duration;
+                    // rewriteInsertHelper(*i, **fmVecIt, a, newList0);
+                    auto task_func = [=, fmVecIt, i, &a, &memRootMutex]() -> std::vector<Item*> {
+                        return valuesRewriteThdFunc(**fmVecIt, *i, a, main_thd, memRootMutex);
+                    };
+
+                    // LOG(debug) << "===> add value list rewrite task to thread queue, idx = "<< idx << ", item = " << *i;
+                    thdPool.addTask(ThdTask{task_func, static_cast<size_t>(idx)});
+
                     ++fmVecIt;
                 }
+
+                // step2. 等待所有任务完成
+                // LOG(debug) << "----> I am waiting for value rewrite completion.";
+                thdPool.waitForCompletion();
+                
+                // LOG(debug) << "----> sort all results and add to newList0....";
+                // step3. Sort the results based on the task index
+                thdPool.getSortedResults();
+        
+                // step4. 将所有结果加入`newList`
+                // LOG(debug) << "----> add results to newList0....";
+                for (const auto& result_pair : thdPool.results) {
+                    const auto& result = result_pair.second;
+                    for (const auto& item : result) {
+                        newList0->push_back(item);
+                        // LOG(debug) << "----> add item = " << item;
+                    }
+                }
+                thdPool.clearResults();
+                // LOG(debug) << "----> thread tasks all done.";
                 
                 for (auto def_it : implicit_defaults) {
                     newList0->push_back(def_it);
                 }
             }
             newList.push_back(newList0);
+            
+            gettimeofday(&end, nullptr);
+            duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+            // LOG(debug) << "value rewrite once duration is " << duration;
         }
         
         // many_values 在lexToQuery中回收

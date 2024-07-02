@@ -6,48 +6,82 @@ using namespace std;
 /* Functions for constructing/copying MySQL structures  */
 
 Item_string *
-dup_item(const Item_string &i)
+dup_item(const Item_string &i, THD* thd, pthread_mutex_t *memRootMutex)
 {
-    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/string dup_item =" << current_thd;;
     assert(i.type() == Item::Type::STRING_ITEM);
     const std::string s = ItemToString(i);
-    return new (current_thd->mem_root) Item_string(make_thd_string(s),
-                                                   s.length(),
-                                                   i.default_charset());
+    Item_string *newItem = nullptr;
+    if (thd) {
+        assert(thd->mem_root);
+        if (memRootMutex) { pthread_mutex_lock(memRootMutex); }
+        newItem = new (thd->mem_root) Item_string(thd, const_cast<Item_string*>(&i),
+                                                    make_thd_string(s, 0, thd),
+                                                    s.length(),
+                                                    i.default_charset());
+        if (memRootMutex) { pthread_mutex_unlock(memRootMutex); }
+    } else {
+        newItem = new (current_thd->mem_root) Item_string(make_thd_string(s),
+                                                    s.length(),
+                                                    i.default_charset());
+    }
+    return newItem;
 }
 
 Item_int *
-dup_item(const Item_int &i)
+dup_item(const Item_int &i, THD* thd, pthread_mutex_t *memRootMutex)
 {
-    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/int dup_item =" << current_thd;;
     assert(i.type() == Item::Type::INT_ITEM);
-    return new (current_thd->mem_root) Item_int(i.value);
+    
+    Item_int *newItem = nullptr;
+    if (thd) {
+        assert(thd->mem_root);
+        if (memRootMutex) { pthread_mutex_lock(memRootMutex); }
+        newItem = new (thd->mem_root) Item_int(thd, const_cast<Item_int *>(&i), i.value);
+        if (memRootMutex) { pthread_mutex_unlock(memRootMutex); }
+    } else {
+        newItem = new (current_thd->mem_root) Item_int(i.value);
+    }
+    return newItem;
 }
 
 Item_null *
-dup_item(const Item_null &i)
+dup_item(const Item_null &i, THD* thd, pthread_mutex_t *memRootMutex)
 {
-    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/null dup_item =" << current_thd;;
     assert(i.type() == Item::Type::NULL_ITEM);
-    return new (current_thd->mem_root) Item_null(i.name);
+
+    Item_null *newItem = nullptr;
+    if (thd) {
+        assert(thd->mem_root);
+        if (memRootMutex) { pthread_mutex_lock(memRootMutex); }
+        newItem = new (thd->mem_root) Item_null(thd, const_cast<Item_null*>(&i), i.name);
+        if (memRootMutex) { pthread_mutex_unlock(memRootMutex); }
+    } else {
+        newItem = new (current_thd->mem_root) Item_null(i.name);
+    }
+    return newItem;
 }
 
 Item_func *
-dup_item(const Item_func &i)
+dup_item(const Item_func &i, THD* thd, pthread_mutex_t *memRootMutex)
 {
-    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/func dup_item =" << current_thd;;
     assert(i.type() == Item::Type::FUNC_ITEM);
+    THD *newThd = thd ? thd : current_thd;
+    Item_func * newItem = nullptr;
+    // LOG(debug) << "current_thd =" << newThd;
     switch (i.functype()) {
         case Item_func::Functype::NEG_FUNC:
-            return new (current_thd->mem_root)
+            if (memRootMutex) { pthread_mutex_lock(memRootMutex); }
+            newItem = new (newThd->mem_root)
                 Item_func_neg(i.arguments()[0]);
+            if (memRootMutex) { pthread_mutex_unlock(memRootMutex); }
+            return newItem;
         default:
             thrower() << "Can't clone function type: " << i.type();
     }
 }
 
 Item_decimal *
-dup_item(const Item_decimal &i)
+dup_item(const Item_decimal &i, THD* thd, pthread_mutex_t *memRootMutex)
 {
     assert(i.type() == Item::Type::DECIMAL_ITEM);
     // FIXME: Memleak, should be allocated on THD.
@@ -55,40 +89,51 @@ dup_item(const Item_decimal &i)
 }
 
 Item_float *
-dup_item(const Item_float &i)
+dup_item(const Item_float &i, THD* thd, pthread_mutex_t *memRootMutex)
 {
-    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/float dup_item =" << current_thd;;
     assert(i.type() == Item::Type::REAL_ITEM);
-    return new (current_thd->mem_root) Item_float(i.name, i.value,
-                                                i.decimals, i.max_length);
+    Item_float * newItem = nullptr;
+    if (thd) {
+        if(memRootMutex) { pthread_mutex_lock(memRootMutex); }
+        newItem = new (thd->mem_root) Item_float(thd, const_cast<Item_float*>(&i), 
+                                                    i.name, i.value, i.decimals, i.max_length);
+        if(memRootMutex) { pthread_mutex_unlock(memRootMutex); }
+    } else {
+        newItem = new (current_thd->mem_root) Item_float(i.name, i.value, i.decimals, i.max_length);
+    }
+    return newItem;
 }
 
 Item_field *
-dup_item(const Item_field &i)
+dup_item(const Item_field &i, THD* thd, pthread_mutex_t *memRootMutex)
 {
-    // LOG(debug) << "-------- current_thd in parser/lex_util.cc/field dup_item =" << current_thd;;
-    return new (current_thd->mem_root) Item_field(current_thd, &const_cast<Item_field &>(i));
+    THD* newThd = thd ? thd : current_thd;
+    // LOG(debug) << "current_thd =" << newThd;
+    if(memRootMutex) { pthread_mutex_lock(memRootMutex); }
+    auto newItem = new (newThd->mem_root) Item_field(newThd, &const_cast<Item_field &>(i));
+    if(memRootMutex) { pthread_mutex_unlock(memRootMutex); }
+    return newItem;
 }
 
 Item *
-dup_item(const Item &i)
+dup_item(const Item &i, THD* thd, pthread_mutex_t *memRootMutex)
 {
     switch (i.type()) {
         case Item::Type::STRING_ITEM:
-            return dup_item(static_cast<const Item_string &>(i));
+            return dup_item(static_cast<const Item_string &>(i), thd, memRootMutex);
         case Item::Type::INT_ITEM:
-            return dup_item(static_cast<const Item_int &>(i));
+            return dup_item(static_cast<const Item_int &>(i), thd, memRootMutex);
         case Item::Type::NULL_ITEM:
-            return dup_item(static_cast<const Item_null &>(i));
+            return dup_item(static_cast<const Item_null &>(i), thd, memRootMutex);
         case Item::Type::FUNC_ITEM:
-            return dup_item(static_cast<const Item_func &>(i));
+            return dup_item(static_cast<const Item_func &>(i), thd, memRootMutex);
         case Item::Type::DECIMAL_ITEM:
-            return dup_item(static_cast<const Item_decimal &>(i));
+            return dup_item(static_cast<const Item_decimal &>(i), thd, memRootMutex);
         case Item::Type::REAL_ITEM:
             assert(i.field_type() == MYSQL_TYPE_DOUBLE);
-            return dup_item(static_cast<const Item_float &>(i));
+            return dup_item(static_cast<const Item_float &>(i), thd, memRootMutex);
         case Item::Type::FIELD_ITEM:
-            return dup_item(static_cast<const Item_field &>(i));
+            return dup_item(static_cast<const Item_field &>(i), thd, memRootMutex);
         default:
             throw CryptDBError("Unable to clone: " +
                                std::to_string(i.type()));

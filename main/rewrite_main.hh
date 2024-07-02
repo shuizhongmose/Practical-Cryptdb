@@ -144,9 +144,9 @@ class CItemSubtype : public CItemType {
                                    THD* thd=nullptr, 
                                    pthread_mutex_t *memRootMutex=nullptr) const
     {
-        // std::cout << "main/rewrite_main.hh:147 begin do_rewrite_insert_type"<<std::endl;
+        // LOG(debug) << "begin do_rewrite_insert_type, thd = " << thd << ", memRootMutex = " << memRootMutex;
         do_rewrite_insert_type(static_cast<const T &>(i), fm, a, l, thd, memRootMutex);
-        // std::cout << "main/rewrite_main.hh:149 finish do_rewrite_insert_type" << std::endl ;
+        // LOG(debug) << "finish do_rewrite_insert_type";
     }
 
  private:
@@ -217,9 +217,9 @@ class CItemTypeDir : public CItemType {
                            THD* thd=nullptr, 
                            pthread_mutex_t *memRootMutex=nullptr) const
     {
-        // std::cout << "main/rewrite_main.hh:220 begin do_rewrite_insert ......"<<std::endl;
+        // LOG(debug) << "begin do_rewrite_insert, thd = " << thd << ", memRootMutex = " << memRootMutex;
         lookup(i).do_rewrite_insert(i, fm, a, l, thd, memRootMutex);
-        // std::cout << "main/rewrite_main.hh:222 do_rewrite_insert done"<<std::endl;
+        // LOG(debug) << "do_rewrite_insert done";
     }
 
 protected:

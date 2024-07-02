@@ -640,7 +640,9 @@ createAndRewriteField(Analysis &a, Create_field * const cf,
 // 5. 返回经过层级加密后的新数据项。
 Item *
 encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
-                    const Analysis &a, uint64_t IV) {
+                    const Analysis &a, uint64_t IV,
+                    THD* thd, pthread_mutex_t *memRootMutex) {
+    // LOG(debug) << "thd = " << thd << ", memRootMutex = " << memRootMutex;
     assert(!RiboldMYSQL::is_null(i));
     //这里是onionMeta中的vector, enclayers.也就是洋葱不同层次的加解密通过Onionmeta以及
     //encLary中的加解密算法来完成.
@@ -653,7 +655,8 @@ encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
     for (const auto &it : enc_layers) {
         // LOG(encl) << "encrypt layer "
         //          << TypeText<SECLEVEL>::toText(it->level()) << "\n";
-        new_enc = it->encrypt(*enc, IV);
+        new_enc = it->encrypt(*enc, IV, thd, memRootMutex);
+        // LOG(encl) << "finish encrypt.";
         assert(new_enc);
         enc = new_enc;
     }
@@ -677,8 +680,10 @@ escapeString(const std::unique_ptr<Connect> &c,
 
 void
 encrypt_item_all_onions(const Item &i, const FieldMeta &fm,
-                        uint64_t IV, Analysis &a, std::vector<Item*> *l)
+                        uint64_t IV, Analysis &a, std::vector<Item*> *l,
+                        THD* thd, pthread_mutex_t *memRootMutex)
 {
+    // LOG(debug) << "thd = " << thd << ", memRootMutex = " << memRootMutex;
     for (auto it : fm.orderedOnionMetas()) {
        
         const onion o = it.first->getValue();
@@ -686,23 +691,29 @@ encrypt_item_all_onions(const Item &i, const FieldMeta &fm,
         //一个fieldmeta表示一个field, 内部的不同洋葱表现在onionMeta,每个onionMeta的不同层次表现
         //在enclyer. 而保持的时候, 是onometekey,onoinmeta这种pair来让我们知道这个onionMeta是哪种
         //枚举的洋葱类型.
-        l->push_back(encrypt_item_layers(i, o, *om, a, IV));
+        // LOG(debug) << "call encrypt_item_layers ...";
+        l->push_back(encrypt_item_layers(i, o, *om, a, IV, thd, memRootMutex));
     }
 }
 
 void
 typical_rewrite_insert_type(const Item &i, const FieldMeta &fm,
-                            Analysis &a, std::vector<Item *> *l) {
-
-
+                            Analysis &a, std::vector<Item *> *l,
+                           THD* thd, pthread_mutex_t *memRootMutex) {
+    // LOG(debug) << "call encrypt_item_all_onions, thd = " << thd << ", memRootMutex = " << memRootMutex;
     const uint64_t salt = fm.getHasSalt() ? randomValue() : 0;
-
-    encrypt_item_all_onions(i, fm, salt, a, l);
+    encrypt_item_all_onions(i, fm, salt, a, l, thd, memRootMutex);
 
     //对于每种类型, 除了保存加密的洋葱, 还把fm中的salt也变成Int类型保存起来了, 所以会出现奇怪的多了一组数据的情况, 就看
     //这个东西是什么时候应用.
     if (fm.getHasSalt()) {
-        l->push_back(new Item_int(static_cast<ulonglong>(salt)));
+        if (thd) {
+            if (memRootMutex) {pthread_mutex_lock(memRootMutex);}
+            l->push_back(new (thd->mem_root)Item_int(thd, const_cast<Item*>(&i), static_cast<ulonglong>(salt)));
+            if (memRootMutex) {pthread_mutex_unlock(memRootMutex);}
+        } else {
+            l->push_back(new (current_thd->mem_root)Item_int(static_cast<ulonglong>(salt)));
+        }
     }
 }
 

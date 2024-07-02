@@ -74,7 +74,9 @@ createAndRewriteField(Analysis &a, Create_field * const cf,
 
 Item *
 encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
-                    const Analysis &a, uint64_t IV = 0);
+                    const Analysis &a, uint64_t IV = 0,
+                    THD* thd=nullptr, 
+                    pthread_mutex_t *memRootMutex=nullptr);
 
 // FIXME(burrows): Generalize to support any container with next AND end
 // semantics.
@@ -113,14 +115,18 @@ escapeString(const std::unique_ptr<Connect> &c,
 
 void
 encrypt_item_all_onions(const Item &i, const FieldMeta &fm,
-                        uint64_t IV, Analysis &a, std::vector<Item *> *l);
+                        uint64_t IV, Analysis &a, std::vector<Item *> *l,
+                        THD* thd = nullptr,
+                        pthread_mutex_t *memRootMutex = nullptr);
 
 std::vector<onion>
 getOnionIndexTypes();
 
 void
 typical_rewrite_insert_type(const Item &i, const FieldMeta &fm,
-                            Analysis &a, std::vector<Item *> *l);
+                            Analysis &a, std::vector<Item *> *l,
+                           THD* thd=nullptr,
+                           pthread_mutex_t *memRootMutex=nullptr);
 
 void
 process_select_lex(const st_select_lex &select_lex, Analysis &a);

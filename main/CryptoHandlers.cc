@@ -418,7 +418,7 @@ public:
                                   const std::string &anonname = "")
         const;
 
-    Item *encrypt(const Item &ptext, uint64_t IV) const;
+    Item *encrypt(const Item &ptext, uint64_t IV, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr) const;
     Item *decrypt(const Item &ctext, uint64_t IV) const;
     Item * decryptUDF(Item * const col, Item * const ivcol) const;
 
@@ -442,7 +442,7 @@ public:
                                   const std::string &anonname = "")
         const;
 
-    Item * encrypt(const Item &ptext, uint64_t IV) const;
+    Item * encrypt(const Item &ptext, uint64_t IV, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr) const;
     Item * decrypt(const Item &ctext, uint64_t IV) const;
     Item * decryptUDF(Item * const col, Item * const ivcol) const;
 
@@ -517,18 +517,26 @@ RND_int::newCreateField(const Create_field &cf,
 
 //TODO: may want to do more specialized crypto for lengths
 Item *
-RND_int::encrypt(const Item &ptext, uint64_t IV) const
+RND_int::encrypt(const Item &ptext, uint64_t IV, THD* thd, pthread_mutex_t *memRootMutex) const
 {
-    // LOG(debug) << "-------- current_thd in RND_int::encrypt =" << current_thd;
     //TODO: should have encrypt_SEM work for any length
     const uint64_t p = RiboldMYSQL::val_uint(ptext);
     cinteger.checkValue(p);
 
     const uint64_t c = bf.encrypt(p ^ IV);
     // LOG(encl) << "RND_int encrypt " << p << " IV " << IV << "-->" << c;
-
-    return new (current_thd->mem_root)
-               Item_int(static_cast<ulonglong>(c));
+    Item * newItem = nullptr;
+    if (thd) {
+        assert(thd->mem_root);
+        if (memRootMutex) { pthread_mutex_lock(memRootMutex); }
+        newItem = new (thd->mem_root)
+                Item_int(thd, const_cast<Item*>(&ptext), static_cast<ulonglong>(c));
+        if (memRootMutex) { pthread_mutex_unlock(memRootMutex); }
+    } else {
+        newItem = new (current_thd->mem_root)
+                Item_int(static_cast<ulonglong>(c));
+    }
+    return newItem;
 }
 
 Item *
@@ -604,9 +612,8 @@ RND_str::newCreateField(const Create_field &cf,
 }
 
 Item *
-RND_str::encrypt(const Item &ptext, uint64_t IV) const
+RND_str::encrypt(const Item &ptext, uint64_t IV, THD* thd, pthread_mutex_t *memRootMutex) const
 {
-    // LOG(debug) << "-------- current_thd in RND_str::encrypt =" << current_thd;
     const std::string &enc =
         encrypt_AES_CBC(ItemToString(ptext), enckey.get(),
                         BytesFromInt(IV, SALT_LEN_BYTES), do_pad);
@@ -614,10 +621,23 @@ RND_str::encrypt(const Item &ptext, uint64_t IV) const
     // LOG(encl) << "RND_str encrypt " << ItemToString(ptext) << " IV "
     //           << IV << "--->" << "len of enc " << enc.length()
     //           << " enc " << enc;
-
-    return new (current_thd->mem_root) Item_string(make_thd_string(enc),
+    Item * newItem = nullptr;
+    if (thd) {
+        pthread_mutex_lock(memRootMutex);
+        assert(thd->mem_root);
+        newItem = new (thd->mem_root) Item_string(thd, const_cast<Item*>(&ptext), 
+                                                    make_thd_string(enc,0,thd),
+                                                    enc.length(),
+                                                    &my_charset_bin);
+        pthread_mutex_unlock(memRootMutex);
+        // LOG(debug) << "current_thd = " << thd;
+    } else {
+        newItem = new (current_thd->mem_root) Item_string(make_thd_string(enc),
                                                    enc.length(),
                                                    &my_charset_bin);
+    }
+
+    return newItem;
 }
 
 Item *
@@ -689,7 +709,7 @@ public:
         const;
 
     // FIXME: final
-    Item *encrypt(const Item &ptext, uint64_t IV) const;
+    Item *encrypt(const Item &ptext, uint64_t IV, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr) const;
     Item *decrypt(const Item &ctext, uint64_t IV) const;
     Item *decryptUDF(Item *const col, Item *const ivcol = NULL) const;
 
@@ -754,7 +774,7 @@ public:
     Create_field * newCreateField(const Create_field &cf,
                                   const std::string &anonname = "")
         const;
-    Item *encrypt(const Item &ptext, uint64_t IV) const;
+    Item *encrypt(const Item &ptext, uint64_t IV, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr) const;
     Item *decrypt(const Item &ctext, uint64_t IV) const;
     Item * decryptUDF(Item * const col, Item * const ivcol = NULL) const;
 protected:
@@ -824,21 +844,28 @@ DET_abstract_integer::newCreateField(const Create_field &cf,
 }
 
 Item *
-DET_abstract_integer::encrypt(const Item &ptext, uint64_t IV) const
+DET_abstract_integer::encrypt(const Item &ptext, uint64_t IV, THD* thd, pthread_mutex_t *memRootMutex) const
 {
-    // LOG(debug) << "-------- current_thd in DET_abstract_integer::encrypt =" << current_thd;
     const ulonglong value = RiboldMYSQL::val_uint(ptext);
     getCInteger_().checkValue(value);
 
     const ulonglong res = static_cast<ulonglong>(getBlowfish_().encrypt(value));
     // LOG(encl) << "DET_int enc " << value << "--->" << res;
-    return new (current_thd->mem_root) Item_int(res);
+    Item * newItem = nullptr;
+    if(thd) {
+        if (memRootMutex) { pthread_mutex_lock(memRootMutex); }
+        newItem = new (thd->mem_root) Item_int(thd, const_cast<Item*>(&ptext), res);
+        if (memRootMutex) { pthread_mutex_unlock(memRootMutex); }
+    } else {
+        newItem = new (current_thd->mem_root) Item_int(res);
+    }
+    return newItem;
 }
 
 Item *
 DET_abstract_integer::decrypt(const Item &ctext, uint64_t IV) const
 {
-    // LOG(debug) << "-------- current_thd in DET_abstract_integer::decrypt =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in DET_abstract_integer::decrypt =" << current_thd;
     const ulonglong value = static_cast<const Item_int &>(ctext).value;
     const ulonglong retdec = getBlowfish_().decrypt(value);
     // LOG(encl) << "DET_int dec " << value << "--->" << retdec;
@@ -890,23 +917,39 @@ DET_str::newCreateField(const Create_field &cf,
 }
 
 Item *
-DET_str::encrypt(const Item &ptext, uint64_t IV) const
+DET_str::encrypt(const Item &ptext, uint64_t IV, THD* thd, 
+                pthread_mutex_t *memRootMutex) const
 {
-    // LOG(debug) << "-------- current_thd in DET_str::encrypt =" << current_thd;;
     const std::string plain = ItemToString(ptext);
     const std::string enc = encrypt_AES_CMC(plain, enckey.get(), do_pad);
     // LOG(encl) << " DET_str encrypt " << plain  << " IV " << IV << " ---> "
     //           << " enc len " << enc.length() << " enc " << enc;
+    Item * newItem = nullptr;
+    if (thd) {
+        // FIXME: 底层调用的是Item()构造函数（mysql-src/sql/item.cc:434），该构造函数里使用的是current_thd，而不是上层传入的thd
+        // 修改方法1 是显示地调用 Item(THD *thd, Item *item)，参考make_item_field
+        assert(thd->mem_root);
+        pthread_mutex_lock(memRootMutex);
+        newItem = new (thd->mem_root) Item_string(thd, const_cast<Item*>(&ptext), 
+                                                    make_thd_string(enc,0,thd),
+                                                    enc.length(),
+                                                    &my_charset_bin);
+        pthread_mutex_unlock(memRootMutex);
+        // LOG(debug) << "current_thd = " << thd;
+    } else {
+        newItem = new (current_thd->mem_root) Item_string(make_thd_string(enc),
+                                                    enc.length(),
+                                                    &my_charset_bin);
+        // LOG(debug) << "current_thd = " << current_thd;
+    }
 
-    return new (current_thd->mem_root) Item_string(make_thd_string(enc),
-                                                   enc.length(),
-                                                   &my_charset_bin);
+    return newItem;
 }
 
 Item *
 DET_str::decrypt(const Item &ctext, uint64_t IV) const
 {
-    // LOG(debug) << "-------- current_thd in DET_str::decrypt =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in DET_str::decrypt =" << current_thd;
     const std::string enc = ItemToString(ctext);
     const std::string dec = decrypt_AES_CMC(enc, deckey.get(), do_pad);
     // LOG(encl) << " DET_str decrypt enc len " << enc.length()
@@ -937,7 +980,7 @@ static udf_func u_decDETStr = {
 Item *
 DET_str::decryptUDF(Item * const col, Item * const ivcol) const
 {
-    // LOG(debug) << "-------- current_thd in DET_str::decryptUDF =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in DET_str::decryptUDF =" << current_thd;
     List<Item> l;
     l.push_back(col);
     l.push_back(get_key_item(rawkey));
@@ -1045,7 +1088,7 @@ public:
                                   const std::string &anonname = "")
         const;
 
-    Item *encrypt(const Item &p, uint64_t IV) const;
+    Item *encrypt(const Item &p, uint64_t IV, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr) const;
     Item *decrypt(const Item &c, uint64_t IV) const;
 
 private:
@@ -1082,7 +1125,7 @@ public:
                                   const std::string &anonname = "")
         const;
 
-    Item *encrypt(const Item &p, uint64_t IV) const;
+    Item *encrypt(const Item &p, uint64_t IV, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr) const;
     Item *decrypt(const Item &c, uint64_t IV) const
         __attribute__((noreturn));
 
@@ -1290,17 +1333,25 @@ reverse(const std::string &s)
 }
 
 Item *
-OPE_int::encrypt(const Item &ptext, uint64_t IV) const
+OPE_int::encrypt(const Item &ptext, uint64_t IV, THD* thd, pthread_mutex_t *memRootMutex) const
 {
-    // LOG(debug) << "-------- current_thd in OPE_int::encrypt =" << current_thd;
     const uint64_t pval = RiboldMYSQL::val_uint(ptext);
     cinteger.checkValue(pval);
 
     // LOG(encl) << "OPE_int encrypt " << pval << " IV " << IV << std::endl;
 
+    Item * newItem = nullptr;
     if (MYSQL_TYPE_VARCHAR != this->cinteger.getFieldType()) {
         const ulonglong enc = uint64FromZZ(ope.encrypt(ZZFromUint64(pval)));
-        return new Item_int(enc);
+        if (thd) {
+            assert(thd->mem_root);
+            if (memRootMutex) { pthread_mutex_lock(memRootMutex); }
+            newItem = new (thd->mem_root)Item_int(thd, const_cast<Item*>(&ptext), enc);
+            if (memRootMutex) { pthread_mutex_unlock(memRootMutex); }
+        } else {
+            newItem = new (current_thd->mem_root)Item_int(enc);
+        }
+        return newItem;
     }
 
     // > the result of the encryption could be larger than 64 bits so
@@ -1313,10 +1364,20 @@ OPE_int::encrypt(const Item &ptext, uint64_t IV) const
         leadingZeros(reverse(StringFromZZ(ope.encrypt(ZZFromUint64(pval)))),
                      this->ciph_size);
 
-
-    return new (current_thd->mem_root) Item_string(make_thd_string(enc_string),
-                           enc_string.length(),
-                           &my_charset_bin);
+    if (thd) {
+        assert(thd->mem_root);
+        if (memRootMutex) { pthread_mutex_lock(memRootMutex); }
+        newItem = new (thd->mem_root) Item_string(thd, const_cast<Item*>(&ptext), 
+                            make_thd_string(enc_string, 0, thd),
+                            enc_string.length(),
+                            &my_charset_bin);
+        if (memRootMutex) { pthread_mutex_unlock(memRootMutex); }
+    } else {
+        newItem = new (current_thd->mem_root) Item_string(make_thd_string(enc_string),
+                            enc_string.length(),
+                            &my_charset_bin);
+    }
+    return newItem;
 }
 
 Item *
@@ -1365,9 +1426,8 @@ OPE_str::newCreateField(const Create_field &cf,
  * +-----------+-----------+-----------+-----------+
  */
 Item *
-OPE_str::encrypt(const Item &ptext, uint64_t IV) const
+OPE_str::encrypt(const Item &ptext, uint64_t IV, THD* thd, pthread_mutex_t *memRootMutex) const
 {
-    // LOG(debug) << "-------- current_thd in OPE_str::encrypt =" << current_thd;;
     std::string ps = toUpperCase(ItemToString(ptext));
     if (ps.size() < plain_size)
         ps = ps + std::string(plain_size - ps.size(), 0);
@@ -1379,9 +1439,21 @@ OPE_str::encrypt(const Item &ptext, uint64_t IV) const
     }
 
     const ZZ enc = ope.encrypt(to_ZZ(pv));
+    Item * newItem = nullptr;
+    if(thd) {        
+        pthread_mutex_lock(memRootMutex);
+        assert(thd->mem_root);
+        newItem = new (thd->mem_root)
+                Item_int(thd, const_cast<Item*>(&ptext),
+                            static_cast<ulonglong>(uint64FromZZ(enc)));
+        if (memRootMutex) { pthread_mutex_unlock(memRootMutex); }
+        // LOG(debug) << "current_thd = " << thd;
+    } else {
+        newItem = new (current_thd->mem_root)
+                Item_int(static_cast<ulonglong>(uint64FromZZ(enc)));
+    }
 
-    return new (current_thd->mem_root)
-               Item_int(static_cast<ulonglong>(uint64FromZZ(enc)));
+    return newItem;
 }
 
 Item *
@@ -1422,21 +1494,30 @@ ItemIntToZZ(const Item &ptext)
 static Item *
 ZZToItemInt(const ZZ &val)
 {
-    // LOG(debug) << "-------- current_thd in ZZToItemInt =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in ZZToItemInt =" << current_thd;
     const ulonglong v = uint64FromZZ(val);
 
     return new (current_thd->mem_root) Item_int(v);
 }
 
 static Item *
-ZZToItemStr(const ZZ &val)
+ZZToItemStr(const ZZ &val, THD* thd=nullptr, pthread_mutex_t *memRootMutex=nullptr, Item *i0=nullptr)
 {
-    // LOG(debug) << "-------- current_thd in ZZToItemStr =" << current_thd;;
     const std::string &str = StringFromZZ(val);
-    Item * const newit =
-        new (current_thd->mem_root) Item_string(make_thd_string(str),
-                                                str.length(),
-                                                &my_charset_bin);
+    Item *newit = nullptr;
+    if (thd) {
+        assert(thd->mem_root);
+        if (memRootMutex) { pthread_mutex_lock(memRootMutex); }
+        newit = new (thd->mem_root) Item_string(thd, i0, make_thd_string(str, 0, thd),
+                                                    str.length(),
+                                                    &my_charset_bin);
+        if (memRootMutex) { pthread_mutex_unlock(memRootMutex); }   
+    } else {
+        newit = new (current_thd->mem_root) Item_string(make_thd_string(str),
+                                                    str.length(),
+                                                    &my_charset_bin);
+    }            
+    assert(newit);
     newit->name = NULL; //no alias
 
     return newit;
@@ -1476,8 +1557,7 @@ HOM::unwait() const {
 }
 
 Item *
-HOM::encrypt(const Item &ptext, uint64_t IV) const{
-    // LOG(debug) << "-------- current_thd in HOM::encrypt =" << current_thd;
+HOM::encrypt(const Item &ptext, uint64_t IV, THD* thd, pthread_mutex_t *memRootMutex) const{
     if (true == waiting) {
         this->unwait();
     }
@@ -1485,7 +1565,7 @@ HOM::encrypt(const Item &ptext, uint64_t IV) const{
     const ZZ enc = sk->encrypt(ItemIntToZZ(ptext));
     
     // LOG(encl) << " HOME encrypt " << " IV " << IV << " ---> " << " enc " << enc;
-    return ZZToItemStr(enc);
+    return ZZToItemStr(enc, thd, memRootMutex, const_cast<Item*>(&ptext));
 }
 
 Item *
@@ -1534,7 +1614,7 @@ static udf_func u_sum_f = {
 Item *
 HOM::sumUDA(Item *const expr) const
 {
-    // LOG(debug) << "-------- current_thd in HOM::sumUDA =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in HOM::sumUDA =" << current_thd;
     if (true == waiting) {
         this->unwait();
     }
@@ -1549,7 +1629,7 @@ HOM::sumUDA(Item *const expr) const
 Item *
 HOM::sumUDF(Item *const i1, Item *const i2) const
 {
-    // LOG(debug) << "-------- current_thd in HOM::sumUDF =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in HOM::sumUDF =" << current_thd;
     if (true == waiting) {
         this->unwait();
     }
@@ -1654,17 +1734,25 @@ newmem(const std::string &a)
 }
 
 Item *
-Search::encrypt(const Item &ptext, uint64_t IV) const
+Search::encrypt(const Item &ptext, uint64_t IV, THD* thd, pthread_mutex_t *memRootMutex) const
 {
-    // LOG(debug) << "-------- current_thd in Search::encrypt =" << current_thd;
     const std::string plainstr = ItemToString(ptext);
     //TODO: remove string, string serves this purpose now..
     const std::list<std::string> * const tokens = tokenize(plainstr);
     const std::string ciph = encryptSWP(key, *tokens);
 
     // LOG(encl) << "SEARCH encrypt " << plainstr << " --> " << ciph;
-
-    return new (current_thd->mem_root) Item_string(newmem(ciph), ciph.length(), &my_charset_bin);
+    Item *newItem = nullptr;
+    if (thd) {
+        assert(thd->mem_root);
+        if (memRootMutex) { pthread_mutex_lock(memRootMutex); }
+        newItem = new (thd->mem_root) Item_string(thd, const_cast<Item*>(&ptext),
+                                                newmem(ciph), ciph.length(), &my_charset_bin);
+        if (memRootMutex) { pthread_mutex_unlock(memRootMutex); }
+    } else {
+        newItem = new (current_thd->mem_root) Item_string(newmem(ciph), ciph.length(), &my_charset_bin);
+    }
+    return newItem;
 }
 
 Item *
@@ -1731,7 +1819,7 @@ Create_field *
 PlainText::newCreateField(const Create_field &cf,
                           const std::string &anonname) const
 {
-    // LOG(debug) << "-------- current_thd in PlainText::newCreateField =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in PlainText::newCreateField =" << current_thd;
     const THD * const thd = current_thd;
     Create_field * const f0 = cf.clone(thd->mem_root);
     if (anonname.size() > 0) {
@@ -1742,11 +1830,10 @@ PlainText::newCreateField(const Create_field &cf,
 }
 
 Item *
-PlainText::encrypt(const Item &ptext, uint64_t IV) const
+PlainText::encrypt(const Item &ptext, uint64_t IV, THD* thd, pthread_mutex_t *memRootMutex) const
 {
-    // LOG(debug) << "-------- current_thd in PlainText::encrypt =" << current_thd;
     // LOG(encl) << " PlainText encrypt " << " IV " << IV ;
-    return dup_item(ptext);
+    return dup_item(ptext, thd, memRootMutex);
 }
 
 Item *

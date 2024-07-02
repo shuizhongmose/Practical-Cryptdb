@@ -398,8 +398,12 @@ static class ANON : public CItemSubtypeIT<Item_null, Item::Type::NULL_ITEM> {
             l->push_back(RiboldMYSQL::clone_item(i));
         }
         if (fm.getHasSalt()) {
+            THD* newThd = thd ? thd : current_thd;
             const ulonglong salt = randomValue();
-            l->push_back(new Item_int(static_cast<ulonglong>(salt)));
+            
+            if(memRootMutex) { pthread_mutex_lock(memRootMutex); }
+            l->push_back(new (newThd->mem_root)Item_int(static_cast<ulonglong>(salt)));
+            if (memRootMutex) {pthread_mutex_unlock(memRootMutex);}
         }
     }
 } ANON;

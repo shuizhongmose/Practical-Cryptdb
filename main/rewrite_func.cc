@@ -215,7 +215,7 @@ static class ANON : public CItemSubtypeFT<Item_func_neg, Item_func::Functype::NE
                            THD* thd=nullptr, 
                            pthread_mutex_t *memRootMutex=nullptr) const
     {
-        return typical_rewrite_insert_type(i, fm, a, l, thd);
+        return typical_rewrite_insert_type(i, fm, a, l, thd, memRootMutex);
     }
 
     virtual Item *
@@ -223,7 +223,7 @@ static class ANON : public CItemSubtypeFT<Item_func_neg, Item_func::Functype::NE
                     const RewritePlan &rp, Analysis &a)
         const
     {
-        LOG(debug) << "do_rewrite_type " << i;
+        // LOG(debug) << "do_rewrite_type " << i;
         const RewritePlanOneOLK &rp_one =
             static_cast<const RewritePlanOneOLK &>(rp);
 
