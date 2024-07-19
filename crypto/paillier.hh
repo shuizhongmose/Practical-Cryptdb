@@ -4,6 +4,7 @@
 #include <vector>
 #include <NTL/ZZ.h>
 #include <crypto/prng.hh>
+#include <pthread.h>
 
 #define PAILLIER_LEN_BYTES 256
 const unsigned int Paillier_len_bytes = PAILLIER_LEN_BYTES;
@@ -13,6 +14,7 @@ const unsigned int Paillier_len_bits = Paillier_len_bytes * 8;
 class Paillier {
  public:
     Paillier(); //HACK: we should not need this
+    ~Paillier(); 
     Paillier(const std::vector<NTL::ZZ> &pk);
     std::vector<NTL::ZZ> pubkey() const { return { n, g }; }
     NTL::ZZ hompubkey() const { return n2; }
@@ -103,6 +105,14 @@ class Paillier {
 
     /* Pre-computed randomness */
     std::list<NTL::ZZ> rqueue;
+private:
+    pthread_t thread;
+    pthread_mutex_t setting_mutex;
+    pthread_cond_t queue_cond;
+    bool wrapperStop;
+    bool randgenRunning;
+    static void* randgenWorkerWrapper(void* context);
+    void workerHandler();
 };
 
 class Paillier_priv : public Paillier {

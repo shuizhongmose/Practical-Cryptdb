@@ -8,15 +8,57 @@ using namespace NTL;
  * Public-key operations
  */
 
-Paillier::Paillier() : nbits(0) {
+Paillier::Paillier() : nbits(0), wrapperStop(false), randgenRunning(false){
+}
+
+Paillier::~Paillier(){
+    pthread_mutex_lock(&setting_mutex);
+    wrapperStop = false;
+    pthread_cond_signal(&queue_cond);
+    pthread_mutex_unlock(&setting_mutex);
+
+    pthread_join(thread, NULL);
+
+    pthread_cond_destroy(&queue_cond);
+    pthread_mutex_destroy(&setting_mutex);
+    
+    rqueue.clear();
 }
 
 Paillier::Paillier(const vector<ZZ> &pk)
-    : n(pk[0]), g(pk[1]),
-      nbits(NumBits(n)), n2(n*n)
+    : n(pk[0]), g(pk[1]), 
+      nbits(NumBits(n)), n2(n*n), 
+      wrapperStop(false), randgenRunning(false)
 {
     throw_c(pk.size() == 2);
+
+    rand_gen(10);
+
+    // ADD: 线程相关
+    pthread_mutex_init(&setting_mutex, NULL);
+    pthread_cond_init(&queue_cond, NULL);
+    pthread_create(&thread, NULL, randgenWorkerWrapper, this);
 }
+
+void* Paillier::randgenWorkerWrapper(void* context) {
+    ((Paillier*)context)->workerHandler();
+    return NULL;
+}
+
+void Paillier::workerHandler() {
+    // 该线程是非线程安全向 `rqueue`中添加随机数
+    while(!wrapperStop) {
+        pthread_mutex_lock(&setting_mutex);
+        while (rqueue.size()>5 && !wrapperStop) {
+            pthread_cond_wait(&queue_cond, &setting_mutex);
+        }
+
+        rand_gen(200);
+        pthread_mutex_lock(&setting_mutex);
+        randgenRunning = false;
+        pthread_mutex_unlock(&setting_mutex);
+    }
+}   
 
 void
 Paillier::rand_gen(size_t niter, size_t nmax)
@@ -36,6 +78,12 @@ Paillier::rand_gen(size_t niter, size_t nmax)
 ZZ
 Paillier::encrypt(const ZZ &plaintext)
 {
+    if (rqueue.size()<=5 && !randgenRunning) {
+        pthread_mutex_lock(&setting_mutex);
+        randgenRunning = true;
+        pthread_cond_broadcast(&queue_cond);
+        pthread_mutex_unlock(&setting_mutex);
+    }
     auto i = rqueue.begin();
     if (i != rqueue.end()) {
         ZZ rn = *i;
