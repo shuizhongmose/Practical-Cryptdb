@@ -64,62 +64,62 @@ function printCS()
         sp = proxy.connection.server.dst.port
     end
     if client~= nil then
-        print(redtext("clientName:"..client))
+        print(redtext("[67] clientName:"..client))
     else
-        print(redtext("clientName=nil"))
+        print(redtext("[69] clientName=nil"))
     end
 
-    if server ~= nil then
-        print(redtext(server))
-    else 
-        print(redtext("server=nil"))
-    end
-    if sp ~= nil then
-        print(redtext(sp))
-    else
-        print(redtext("sp = nil"))
-    end
+    -- if server ~= nil then
+    --     print("[73] "..redtext(server))
+    -- else 
+    --     print("[75] "..redtext("server=nil"))
+    -- end
+    -- if sp ~= nil then
+    --     print("[78] "..redtext(sp))
+    -- else
+    --     print("[80] "..redtext("sp = nil"))
+    -- end
 end
 
 
 function connect_server()
-    print(orangetext("connect_server"))
+    print("[86] "..orangetext("connect_server"))
     printCS()
     if g == 1 then 
         g = 0
     else g = 1
     end
-    print("g "..g)
-    print("ndx "..proxy.connection.backend_ndx.."get: "..#proxy.global.backends)
+    -- print("[92] ".."g "..g)
+    -- print("[93] ".."ndx "..proxy.connection.backend_ndx.."get: "..#proxy.global.backends)
 
 end
 
 function read_handshake()
-    print(orangetext("read_handshake"))
+    print("[98] "..orangetext("read_handshake"))
     printCS()
 end
 
 function read_auth()
-    print(orangetext("read_auth"))
+    print("[103] "..orangetext("read_auth"))
     printCS()
 end
 
 function read_auth_result()
-    print(orangetext("read_auth_result"))
+    print("[108] "..orangetext("read_auth_result"))
     printCS()
 end
 
 function read_query( packet )
     print(orangetext("read_query"))
-    print(redtext("query type: "..queryType[string.byte(packet)]))
+    -- print(redtext("query type: "..queryType[string.byte(packet)]))
     printCS()
     
     if string.byte(packet) == proxy.COM_QUERY then
-	print("we got a normal query: " .. string.sub(packet, 2))
+	-- print("we got a normal query: " .. string.sub(packet, 2))
         proxy.queries:append(1, packet, {resultset_is_needed = true})
         return proxy.PROXY_SEND_QUERY
    else
- 	print("we got a abnormal query: " .. string.sub(packet, 2))
+ 	print("[122] ".."we got a abnormal query: " .. string.sub(packet, 2))
     end
 end
 
@@ -156,17 +156,17 @@ function print_rows(inrows)
                    io.write(string.format("%-20s|", "nil"))
                end
          end
-         print()
+        --  print()
     end
 end
 
 function read_query_result(inj)
-    print(orangetext("read_query_result"))
+    -- print(orangetext("read_query_result"))
     printCS()
-    print("ROWS: "..type(inj.resultset.rows))
+    -- print("ROWS: "..type(inj.resultset.rows))
     if inj.resultset.rows ~= nil then
         print_fields(inj.resultset.fields)
-        print("finish fields")
+        -- print("finish fields")
         print_rows(inj.resultset.rows)
     end
 end

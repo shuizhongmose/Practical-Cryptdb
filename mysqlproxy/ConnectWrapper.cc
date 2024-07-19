@@ -236,7 +236,7 @@ disconnect(lua_State *const L) {
         return 0;
     }
 
-    LOG(wrapper) << "disconnect " << client;
+    // LOG(wrapper) << "disconnect " << client;
 
     auto ws = clients[client];
     clients[client] = NULL;

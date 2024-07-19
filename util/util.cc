@@ -155,7 +155,7 @@ static void _ntl_gcopy_mp(mp_limb_t* a, long sa, _ntl_gbigint *bb)
       if (b) SIZE(b) = 0;
    }
    else {
-      if (a != b) {
+      if (a != DATA(b)) {
          if (sa >= 0)
             abs_sa = sa;
          else
@@ -189,13 +189,13 @@ std::string padForZZ(std::string s) {
 }
 
 std::string StringFromZZFast(const ZZ& x) {
-    long sa = SIZE(x.rep);
+    long sa = SIZE(_ntl_gtoint(x.rep));
     long abs_sa;
     if (sa >= 0)
       abs_sa = sa;
     else
       abs_sa = -sa;
-    mp_limb_t* data = DATA(x.rep);
+    mp_limb_t* data = DATA(_ntl_gtoint(x.rep));
     return std::string(reinterpret_cast<char *>(data),
                        abs_sa * sizeof(mp_limb_t));
 }

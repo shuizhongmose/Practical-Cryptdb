@@ -2,7 +2,7 @@ MYSRC := $(shell pwd)/mysql-src
 MYBUILD := $(MYSRC)/build
 RPATH := 1
 
-CXX := g++-4.7
+CXX := g++-4.8
 MYSQL_PLUGIN_DIR := /usr/lib/mysql/plugin
 
 
@@ -17,7 +17,7 @@ CXXFLAGS := -g -O0 -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
 	    -Wno-deprecated \
 	    -Wmissing-declarations -Woverloaded-virtual  \
 	    -Wunreachable-code -D_GNU_SOURCE -std=c++0x -I$(TOP) -g
-LDFLAGS  := -L$(TOP)/$(OBJDIR) -Wl,--no-undefined
+LDFLAGS  := -L$(TOP)/$(OBJDIR) -L/usr/local/lib -Wl,--no-undefined
 
 
 ## Use RPATH only for debug builds; set RPATH=1 in config.mk.
@@ -30,6 +30,7 @@ CXXFLAGS += -I$(MYBUILD)/include \
 	    -I$(MYSRC)/sql \
 	    -I$(MYSRC)/regex \
 	    -I$(MYBUILD)/sql \
+		-I/usr/local/include \
 	    -DHAVE_CONFIG_H -DMYSQL_SERVER -DEMBEDDED_LIBRARY -DDBUG_OFF \
 	    -DMYSQL_BUILD_DIR=\"$(MYBUILD)\"
 # LDFLAGS	 += -lpthread -lrt -ldl -lcrypt -lreadline

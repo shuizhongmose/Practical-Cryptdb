@@ -30,7 +30,7 @@ montgomery::mmul(const ZZ &a, const ZZ &b)
 
     for (uint i = 0; i < _mbits; i += sizeof(long) * 8) {
         uint thisbits = std::min((uint) sizeof(long) * 8, _mbits - i);
-        mp_limb_t* abdata = DATA(ab.rep);
+        mp_limb_t* abdata = DATA(_ntl_gtoint(ab.rep));
         long l = abdata[0];
         long c = _minusm_inv_modr * l;
         if (thisbits < sizeof(long) * 8)

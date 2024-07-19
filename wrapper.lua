@@ -171,6 +171,7 @@ function read_query_real(packet)
 
     if string.byte(packet) == proxy.COM_INIT_DB or
        string.byte(packet) == proxy.COM_QUERY then
+        dprint("read_query_real " .. client)
         status, error_msg =
             CryptDB.rewrite(client, query, proxy.connection.server.thread_id)
 

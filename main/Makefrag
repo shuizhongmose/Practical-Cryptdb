@@ -21,14 +21,14 @@ $(CRYPTDBPROGOBJS): %: %.o $(OBJDIR)/libedbparser.so \
 			   $(OBJDIR)/libcryptdb.so \
 			   $(OBJDIR)/libedbcrypto.so
 	$(CXX) $< -o $@ -ledbparser $(LDFLAGS) $(LDRPATH) \
-			-ledbutil -ledbcrypto -lcryptdb
+			-ledbutil -ledbcrypto -lcryptdb -lpthread
 
 $(OBJDIR)/libcryptdb.so: $(CRYPTDB_OBJS) \
 			 $(OBJDIR)/libedbcrypto.so \
 			 $(OBJDIR)/libedbutil.so \
 			 $(OBJDIR)/libedbparser.so 
 	$(CXX) -shared -g -o $@ $(CRYPTDB_OBJS) $(LDFLAGS) $(LDRPATH) \
-	       -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
+	       -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto -lpthread
 
 
 

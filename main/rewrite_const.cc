@@ -78,7 +78,7 @@ static class ANON : public CItemSubtypeIT<Item_string,
                            THD* thd=nullptr, 
                            pthread_mutex_t *memRootMutex=nullptr) const
     {
-        typical_rewrite_insert_type(i, fm, a, l, thd);
+        typical_rewrite_insert_type(i, fm, a, l);
     }
 } ANON;
 
@@ -107,7 +107,7 @@ static class ANON : public CItemSubtypeIT<Item_float,
                            THD* thd=nullptr, 
                            pthread_mutex_t *memRootMutex=nullptr) const
     {
-        typical_rewrite_insert_type(i, fm, a, l, thd);
+        typical_rewrite_insert_type(i, fm, a, l);
     }
 } ANON;
 
@@ -142,7 +142,7 @@ static class ANON : public CItemSubtypeIT<Item_int, Item::Type::INT_ITEM> {
                            THD* thd=nullptr, 
                            pthread_mutex_t *memRootMutex=nullptr) const
     {
-        typical_rewrite_insert_type(i, fm, a, l, thd);
+        typical_rewrite_insert_type(i, fm, a, l);
     }
 } ANON;
 
@@ -178,6 +178,6 @@ static class ANON : public CItemSubtypeIT<Item_decimal,
                            THD* thd=nullptr, 
                            pthread_mutex_t *memRootMutex=nullptr) const
     {
-        typical_rewrite_insert_type(i, fm, a, l, thd);
+        typical_rewrite_insert_type(i, fm, a, l);
     }
 } ANON;

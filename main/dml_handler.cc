@@ -118,7 +118,7 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
         return;
     }
 
-AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) const{
+AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) const{
         // FIXME：new_lex是来自lex的浅拷贝
     LEX *const new_lex = copyWithTHD(lex);
     const std::string &table =
@@ -148,7 +148,7 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
     double duration = 0;
     // 使用rewriteInsertHelper对SQL进行重写
     //For insert, we can choose to specify field list or omit it.
-    LOG(debug) << "---------> current_thd = " << current_thd << " <----------";
+    // LOG(debug) << "---------> current_thd = " << current_thd << " <----------";
     if (lex->field_list.head()) {
         auto it = List_iterator<Item>(lex->field_list);
         List<Item> newList;
@@ -170,7 +170,7 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
             rewriteInsertHelper(*i, fm, a, &newList);
             gettimeofday(&end, nullptr);
             duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-            LOG(debug) << "duration is " << duration;
+            // LOG(debug) << "duration is " << duration;
         }
 
         // Collect the implicit defaults.
@@ -238,12 +238,13 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
                         break;
                     }
                     //获得values中的内容,并且通过fieldMeta好帮助完成rewrite工作
-                    //每个field都要进行洋葱的加密.
+                    //每个value都要进行洋葱的加密.
                     gettimeofday(&start, nullptr);
+                    // LOG(debug) << "item type = " << i->type();
                     rewriteInsertHelper(*i, **fmVecIt, a, newList0);
                     gettimeofday(&end, nullptr);
                     duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-                    LOG(debug) << "duration is " << duration;
+                    // LOG(debug) << "duration is " << duration;
                     ++fmVecIt;
                 }
                 for (auto def_it : implicit_defaults) {
@@ -278,7 +279,7 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
     return new DMLQueryExecutor(*new_lex, a.rmeta);
 }
 
-AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) const{
+AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) const{
     // FIXME: 此函数中对field_list和value_list 是按照顺序执行，不是多线程，严重影响性能
     // lexToQuery 函数中对new_lex进行了回收
     LEX *const new_lex = copyWithTHD(lex);

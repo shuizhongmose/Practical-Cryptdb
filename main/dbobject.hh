@@ -305,7 +305,6 @@ MappedDBMeta<ChildType, KeyType>::getChild(const KeyType &key) const
     if (it != children.end()) {
         return it->second.get();
     }
-    LOG(warn) << "return NULL";
     return NULL;
 }
 
