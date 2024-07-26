@@ -77,7 +77,7 @@ AbstractQueryExecutor *
 
 	        //对现有的每个field, 如id,name, 都在内部通过createAndRewriteField函数扩展成多个洋葱+salt.
 	        //其中洋葱有多个层, 其通过newCreateField函数, 决定了类型, 而新的field的名字, 就是洋葱的名字传过去的.
-            //扩展以后, 就是新的Create_field类型了, 这了返回的list是被继续传到引用参数里面的, 很奇怪的用法.
+            //扩展以后, 就是新的Create_field类型了, 这里返回的list是被继续传到引用参数里面的, 很奇怪的用法.
             //key data在这里的作用是, 决定是不是unique, 从而选择和是的洋葱层次.
             new_lex->alter_info.create_list =
                 accumList<Create_field>(it,

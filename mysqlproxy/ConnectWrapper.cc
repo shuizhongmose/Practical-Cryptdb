@@ -2,6 +2,8 @@
 #include <fstream>
 #include <assert.h>
 #include <lua5.1/lua.hpp>
+#include <NTL/BasicThreadPool.h>
+#include <stdlib.h>
 
 #include <util/ctr.hh>
 #include <util/cryptdb_log.hh>
@@ -15,6 +17,8 @@
 
 #include <parser/sql_utils.hh>
 #include <parser/mysql_type_metadata.hh>
+
+using namespace NTL;
 
 //为什么需要这个?
 __thread ProxyState *thread_ps = NULL;
@@ -586,10 +590,23 @@ cryptdb_lib[] = {
     { 0, 0 },
 };
 
+
+void cleanupFunction() {
+    // 执行清理操作
+    // 例如释放动态分配的内存、关闭文件等
+    delete shared_ps;
+}
+
 extern "C" int lua_cryptdb_init(lua_State * L);
 
 int
 lua_cryptdb_init(lua_State *const L) {
+    // SetNumThreads(AvailableThreads());
+    SetNumThreads(1);
+    if (atexit(cleanupFunction) != 0) {
+        LOG(error) << "无法注册清理函数";
+        return 0;
+    }
     luaL_openlib(L, "CryptDB", cryptdb_lib, 0);
     return 1;
 }

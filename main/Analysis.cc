@@ -982,6 +982,7 @@ lexToQuery(const LEX &lex)
     mutable_lex.many_values.delete_elements();
     mutable_lex.update_list.delete_elements();
     mutable_lex.value_list.delete_elements();
+    mutable_lex.alter_info.create_list.delete_elements();
     mutable_lex.alter_info.reset();
     return o.str();
 }

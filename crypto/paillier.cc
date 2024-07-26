@@ -1,4 +1,5 @@
 #include <crypto/paillier.hh>
+#include <NTL/BasicThreadPool.h>
 #include <sstream>
 
 using namespace std;
@@ -53,7 +54,7 @@ void Paillier::workerHandler() {
             pthread_cond_wait(&queue_cond, &setting_mutex);
         }
 
-        rand_gen(200);
+        rand_gen(100);
         pthread_mutex_lock(&setting_mutex);
         randgenRunning = false;
         pthread_mutex_unlock(&setting_mutex);
@@ -67,12 +68,13 @@ Paillier::rand_gen(size_t niter, size_t nmax)
         niter = 0;
     else
         niter = min(niter, nmax - rqueue.size());
-
+    NTL_EXEC_RANGE(1, first, last) 
     for (uint i = 0; i < niter; i++) {
         ZZ r = RandomLen_ZZ(nbits) % n;
         ZZ rn = PowerMod(g, n*r, n2);
         rqueue.push_back(rn);
     }
+    NTL_EXEC_RANGE_END
 }
 
 ZZ
