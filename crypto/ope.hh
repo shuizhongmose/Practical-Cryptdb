@@ -2,46 +2,57 @@
 
 #include <string>
 #include <map>
+
 #include <crypto/prng.hh>
 #include <crypto/aes.hh>
 #include <crypto/sha.hh>
+#include <crypto/online_ope.hh>
+// not use min macros in mysql-src
+#undef min
+#include <crypto/ffx.hh>
+
 #include <NTL/ZZ.h>
 
-class ope_domain_range {
- public:
-    ope_domain_range(const NTL::ZZ &d_arg,
-                     const NTL::ZZ &r_lo_arg,
-                     const NTL::ZZ &r_hi_arg)
-        : d(d_arg), r_lo(r_lo_arg), r_hi(r_hi_arg) {}
-    NTL::ZZ d, r_lo, r_hi;
-};
+using namespace std;
+using namespace NTL;
+
+typedef uint64_t NBITS_TYPE;
+const static uint nBITS = sizeof(NBITS_TYPE)*8;
 
 class OPE {
  public:
     OPE(const std::string &keyarg, size_t plainbits, size_t cipherbits)
-    : key(keyarg), pbits(plainbits), cbits(cipherbits), aesk(aeskey(key)) {}
+    : key(keyarg), pbits(plainbits), cbits(cipherbits), aesk(""), ope_clnt(nullptr) {
+
+        bf = new blowfish(key);
+        fk = new ffx2_block_cipher<blowfish, nBITS>(bf,{});
+
+        // Initialize ope_clnt with the block cipher
+        ope_serv = new ope_server<NBITS_TYPE>();
+        ope_clnt = new ope_client<NBITS_TYPE, ffx2_block_cipher<blowfish, nBITS>>(fk, ope_serv);
+    }
+
+    ~OPE() {
+        delete bf;
+        delete fk;
+        delete ope_serv;
+        delete ope_clnt; // Clean up allocated memory
+    }
 
     NTL::ZZ encrypt(const NTL::ZZ &ptext);
     NTL::ZZ decrypt(const NTL::ZZ &ctext);
 
  private:
-    static std::string aeskey(const std::string &key) {
-        auto v = sha256::hash(key);
-        v.resize(16);
-        return v;
-    }
-
+    NTL::ZZ conv_u64_to_zz(const std::vector<uint64_t> resBytes);
+    std::vector<uint64_t> conv_zz_to_u64(const NTL::ZZ &zz);
     std::string key;
-    size_t pbits, cbits;
-
-    AES aesk;
-    std::map<NTL::ZZ, NTL::ZZ> dgap_cache;
-
-    template<class CB>
-    ope_domain_range search(CB go_low);
-
-    template<class CB>
-    ope_domain_range lazy_sample(const NTL::ZZ &d_lo, const NTL::ZZ &d_hi,
-                                 const NTL::ZZ &r_lo, const NTL::ZZ &r_hi,
-                                 CB go_low, blockrng<AES> *prng);
+    size_t pbits;
+    size_t cbits;
+    std::string aesk;
+    
+    blowfish *bf;
+    ffx2_block_cipher<blowfish, nBITS> *fk;
+    ope_server<NBITS_TYPE> *ope_serv;
+    ope_client<NBITS_TYPE, ffx2_block_cipher<blowfish, nBITS>> *ope_clnt;
 };
+

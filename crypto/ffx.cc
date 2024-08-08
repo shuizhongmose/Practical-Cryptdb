@@ -2,7 +2,7 @@
 
 void ffx_mem_to_u64(const uint8_t *p,
                     uint64_t *a, uint64_t *b,
-                    uint abits, uint bbits)
+                    uint8_t abits, uint8_t bbits)
 {
     throw_c(abits <= 64 && bbits <= 64);
 

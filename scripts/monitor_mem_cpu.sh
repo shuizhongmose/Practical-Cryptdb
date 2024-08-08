@@ -4,7 +4,7 @@
 LOG_FILE="cpu_mem_monitor.log"
 
 # 设置收集信息的时间间隔，单位为秒
-INTERVAL=5
+INTERVAL=60
 
 # 创建日志文件，如果已经存在则追加内容
 touch "$LOG_FILE"

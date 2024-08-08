@@ -1367,7 +1367,7 @@ OPE_str::newCreateField(const Create_field &cf,
 Item *
 OPE_str::encrypt(const Item &ptext, uint64_t IV) const
 {
-    // LOG(debug) << "-------- current_thd in OPE_str::encrypt =" << current_thd;;
+    // LOG(debug) << "-------- current_thd in OPE_str::encrypt =" << current_thd;
     std::string ps = toUpperCase(ItemToString(ptext));
     if (ps.size() < plain_size)
         ps = ps + std::string(plain_size - ps.size(), 0);

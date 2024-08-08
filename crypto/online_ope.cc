@@ -97,8 +97,8 @@ static tree_node<EncT> *
 build_tree(uint64_t n, tree_node<EncT> * x) {
     // std::cerr << "build tree n " << n << " x " << print(x) << "\n";
     if (n == 0) {
-	x->left = NULL;
-	return x;
+        x->left = NULL;
+        return x;
     }
     tree_node<EncT> * r = build_tree(ceil(1.0 * (n-1)/2.0), x);
     tree_node<EncT> * s = build_tree(floor(1.0 * (n-1)/2.0), r->right);
@@ -149,20 +149,17 @@ ope_server<EncT>::tree_insert(tree_node<EncT> **np, uint64_t v,
 			      const EncT &encval, uint64_t nbits, uint64_t pathlen)
 {
     if (nbits == 0) {
-        throw_c(*np == 0);
+        // throw_c(*np == 0, "tree_insert, nbits == 0");
 
-        tree_node<EncT> *n = new tree_node<EncT>(encval);
-        *np = n;
-	update_tree_stats(pathlen);
-	if (trigger(pathlen)) {
-	    bool isLeft;
-	    uint64_t subtree_size;
-	    tree_node<EncT> * parent = node_to_balance(v, pathlen, isLeft, subtree_size);
-     	    relabel(parent, isLeft, subtree_size);
-	} else {
-
-	}
-
+        tree_node<EncT> *nd = new tree_node<EncT>(encval);
+        *np = nd;
+        update_tree_stats(pathlen);
+        if (trigger(pathlen)) {
+            bool isLeft;
+            uint64_t subtree_size;
+            tree_node<EncT> * parent = node_to_balance(v, pathlen, isLeft, subtree_size);
+                relabel(parent, isLeft, subtree_size);
+        }
     } else {
         throw_c(*np);
         tree_insert((v&(1ULL<<(nbits-1))) ? &(*np)->right : &(*np)->left,
@@ -315,5 +312,3 @@ ope_server<EncT>::~ope_server()
 template class ope_server<uint64_t>;
 template class ope_server<uint32_t>;
 template class ope_server<uint16_t>;
-
-

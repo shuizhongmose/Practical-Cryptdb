@@ -23,7 +23,7 @@
 
 void ffx_mem_to_u64(const uint8_t *p,
                     uint64_t *a, uint64_t *b,
-                    uint abits, uint bbits);
+                    uint8_t abits, uint8_t bbits);
 void ffx_u64_to_mem(uint64_t a, uint64_t b,
                     uint64_t abits, uint64_t bbits,
                     uint8_t *p);

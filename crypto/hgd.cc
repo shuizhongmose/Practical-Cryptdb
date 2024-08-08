@@ -4,6 +4,10 @@
 using namespace std;
 using namespace NTL;
 
+const static double AL[8] =
+    { 0.0, 0.0, 0.6931471806, 1.791759469, 3.178053830, 4.787491743,
+      6.579251212, 8.525161361 };
+
 static RR
 AFC(const RR &I)
 {
@@ -12,9 +16,6 @@ AFC(const RR &I)
      * IF (I .GT. 7), USE STIRLING'S APPROXIMATION
      * OTHERWISE,  USE TABLE LOOKUP
      */
-    double AL[8] =
-    { 0.0, 0.0, 0.6931471806, 1.791759469, 3.178053830, 4.787491743,
-      6.579251212, 8.525161361 };
 
     if (I <= 7) {
         return to_RR(AL[to_int(round(I))]);
@@ -31,6 +32,11 @@ RAND(PRNG *prng, long precision)
     ZZ rzz = prng->rand_zz_mod(div);
     return to_RR(rzz) / to_RR(div);
 }
+
+const static double CON = 57.56462733;
+const static double DELTAL = 0.0078;
+const static double DELTAU = 0.0034;
+const static double SCALE = 1.0e25;
 
 ZZ
 HGD(const ZZ &KK, const ZZ &NN1, const ZZ &NN2, PRNG *prng)
@@ -53,11 +59,6 @@ HGD(const ZZ &KK, const ZZ &NN1, const ZZ &NN2, PRNG *prng)
 
     bool REJECT;
     RR MINJX, MAXJX;
-
-    double CON = 57.56462733;
-    double DELTAL = 0.0078;
-    double DELTAU = 0.0034;
-    double SCALE = 1.0e25;
 
     /*
      * CHECK PARAMETER VALIDITY
@@ -103,6 +104,10 @@ HGD(const ZZ &KK, const ZZ &NN1, const ZZ &NN2, PRNG *prng)
     /*
      * GENERATE RANDOM VARIATE
      */
+    RR W, S, D, expon;
+    RR F, I, Y, Y1, YM, YN, YK, R, T, E, G, DG, GU, GL, XM, XN, XK, UB;
+    RR ALV, DR, DS, DT, DE;
+
     if (MINJX == MAXJX)  {
         /*
          * ...DEGENERATE DISTRIBUTION...
@@ -114,7 +119,6 @@ HGD(const ZZ &KK, const ZZ &NN1, const ZZ &NN2, PRNG *prng)
          * Shouldn't really happen in OPE because M will be on the order of N1.
          * In practice, this does get invoked.
          */
-        RR W;
         if (K < N2) {
             W = exp(CON + AFC(N2) + AFC(N1+N2-K) - AFC(N2-K) - AFC(N1+N2));
         } else {
@@ -140,18 +144,17 @@ HGD(const ZZ &KK, const ZZ &NN1, const ZZ &NN2, PRNG *prng)
         /*
          * ...H2PE...
          */
-        RR S;
         SqrRoot(S, (TN-K) * K * N1 * N2 / (TN-1) / TN /TN);
 
         /*
          * ...REMARK:  D IS DEFINED IN REFERENCE WITHOUT INT.
          * THE TRUNCATION CENTERS THE CELL BOUNDARIES AT 0.5
          */
-        RR D = trunc(1.5*S) + 0.5;
+        D = trunc(1.5*S) + 0.5;
         XL = trunc(M - D + 0.5);
         XR = trunc(M + D + 0.5);
         A = AFC(M) + AFC(N1-M) + AFC(K-M) + AFC(N2-K+M);
-        RR expon = A - AFC(XL) - AFC(N1-XL)- AFC(K-XL) - AFC(N2-K+XL);
+        expon = A - AFC(XL) - AFC(N1-XL)- AFC(K-XL) - AFC(N2-K+XL);
 
         KL = exp(expon);
         KR = exp(A - AFC(XR-1) - AFC(N1-XR+1) - AFC(K-XR+1) - AFC(N2-K+XR-1));
@@ -187,16 +190,15 @@ HGD(const ZZ &KK, const ZZ &NN1, const ZZ &NN2, PRNG *prng)
         /*
          * ...ACCEPTANCE/REJECTION TEST...
          */
-        RR F;
         if ((M < 100) || (IX <= 50))  {
             /* ...EXPLICIT EVALUATION... */
             F = to_RR(1.0);
             if (M < IX) {
-                for (RR I = M+1; I < IX; I++) {
+                for (I = M+1; I < IX; I++) {
                     /*40*/ F = F * (N1-I+1) * (K-I+1) / (N2-K+I) / I;
                 }
             } else if (M > IX) {
-                for (RR I = IX+1; I < M; I++) {
+                for (I = IX+1; I < M; I++) {
                     /*50*/ F = F * I * (N2-K+I) / (N1-I) / (K-I);
                 }
             }
@@ -206,26 +208,26 @@ HGD(const ZZ &KK, const ZZ &NN1, const ZZ &NN2, PRNG *prng)
         } else {
             /* ...SQUEEZE USING UPPER AND LOWER BOUNDS... */
 
-            RR Y   = IX;
-            RR Y1  = Y + 1.;
-            RR YM  = Y - M;
-            RR YN  = N1 - Y + 1.;
-            RR YK  = K - Y + 1.;
+            Y   = IX;
+            Y1  = Y + 1.;
+            YM  = Y - M;
+            YN  = N1 - Y + 1.;
+            YK  = K - Y + 1.;
             NK     = N2 - K + Y1;
-            RR R   = -YM / Y1;
+            R   = -YM / Y1;
             S      = YM / YN;
-            RR T   = YM / YK;
-            RR E   = -YM / NK;
-            RR G   = YN * YK / (Y1*NK) - 1.;
-            RR DG  = to_RR(1.0);
+            T   = YM / YK;
+            E   = -YM / NK;
+            G   = YN * YK / (Y1*NK) - 1.;
+            DG  = to_RR(1.0);
             if (G < 0)  { DG = 1.0 + G; }
-            RR GU  = G * (1.+G*(-0.5+G/3.0));
-            RR GL  = GU - 0.25 * sqr(sqr(G)) / DG;
-            RR XM  = M + 0.5;
-            RR XN  = N1 - M + 0.5;
-            RR XK  = K - M + 0.5;
+            GU  = G * (1.+G*(-0.5+G/3.0));
+            GL  = GU - 0.25 * sqr(sqr(G)) / DG;
+            XM  = M + 0.5;
+            XN  = N1 - M + 0.5;
+            XK  = K - M + 0.5;
             NM     = N2 - K + XM;
-            RR UB  = Y * GU - M * GL + DELTAU +
+            UB  = Y * GU - M * GL + DELTAU +
                      XM * R * (1.+R*(-.5+R/3.)) +
                      XN * S * (1.+S*(-.5+S/3.)) +
                      XK * T * (1.+T*(-.5+T/3.)) +
@@ -233,25 +235,25 @@ HGD(const ZZ &KK, const ZZ &NN1, const ZZ &NN2, PRNG *prng)
 
             /* ...TEST AGAINST UPPER BOUND... */
 
-            RR ALV = log(V);
+            ALV = log(V);
             if (ALV > UB) {
                 REJECT = true;
             } else {
                 /* ...TEST AGAINST LOWER BOUND... */
 
-                RR DR = XM * sqr(sqr(R));
+                DR = XM * sqr(sqr(R));
                 if (R < 0) {
                     DR = DR / (1.+R);
                 }
-                RR DS = XN * sqr(sqr(S));
+                DS = XN * sqr(sqr(S));
                 if (S < 0) {
                     DS = DS / (1.+S);
                 }
-                RR DT = XK * sqr(sqr(T));
+                DT = XK * sqr(sqr(T));
                 if (T < 0) {
                     DT = DT / (1.+T);
                 }
-                RR DE = NM * sqr(sqr(E));
+                DE = NM * sqr(sqr(E));
                 if (E < 0) {
                     DE = DE / (1.+E);
                 }

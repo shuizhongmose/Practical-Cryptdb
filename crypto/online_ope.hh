@@ -71,10 +71,8 @@ class ope_client {
     }
 
     V decrypt(uint64_t ct) const {
-	uint64_t nbits = 64 - ffsl((uint64_t)ct);
-
+	    uint64_t nbits = 64 - ffsl((uint64_t)ct);
         return block_decrypt(s->lookup(ct>>(64-nbits), nbits));
-
     }
 
     uint64_t encrypt(V pt) const {
@@ -82,25 +80,25 @@ class ope_client {
         uint64_t nbits = 0;
         try {
             for (;;) {
-		V xct = s->lookup(v, nbits);
-		V xpt = block_decrypt(xct);
+		        V xct = s->lookup(v, nbits);
+		        V xpt = block_decrypt(xct);
 
                 if (pt == xpt) {
-		    break;
-		}
+		            break;
+		        }
                 if (pt < xpt) {
                     v = (v<<1) | 0;
-		}
+		        }
                 else {
                     v = (v<<1) | 1;
-		}
+		        }
                 nbits++;
             }
         } catch (ope_lookup_failure&) {
             s->insert(v, nbits, block_encrypt(pt));
-	    //relabeling may have been triggered so we need to lookup value again
-	    //todo: optimize by avoiding extra tree lookup
-	    return encrypt(pt);
+            //relabeling may have been triggered so we need to lookup value again
+            //todo: optimize by avoiding extra tree lookup
+            return encrypt(pt);
         }
 
         throw_c(nbits <= 63);
