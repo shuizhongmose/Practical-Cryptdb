@@ -20,7 +20,7 @@
 
 using namespace NTL;
 
-//为什么需要这个?
+//线程变量拷贝
 __thread ProxyState *thread_ps = NULL;
 
 class WrapperState {
@@ -239,14 +239,13 @@ disconnect(lua_State *const L) {
     if (clients.find(client) == clients.end()) {
         return 0;
     }
-
     // LOG(wrapper) << "disconnect " << client;
 
     auto ws = clients[client];
+    delete ws;
     clients[client] = NULL;
 
     thread_ps = NULL;
-    delete ws;
     clients.erase(client);
 
     mysql_thread_end();

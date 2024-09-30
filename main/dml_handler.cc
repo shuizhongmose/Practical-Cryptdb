@@ -147,7 +147,7 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
     struct timeval start, end;
     double duration = 0;
     // 使用rewriteInsertHelper对SQL进行重写
-    //For insert, we can choose to specify field list or omit it.
+    // For insert, we can choose to specify field list or omit it.
     // LOG(debug) << "---------> current_thd = " << current_thd << " <----------";
     if (lex->field_list.head()) {
         auto it = List_iterator<Item>(lex->field_list);
