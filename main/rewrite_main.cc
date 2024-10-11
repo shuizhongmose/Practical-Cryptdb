@@ -1334,8 +1334,8 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
             return new OnionAdjustmentExecutor(std::move(deltas),
                                                adjust_queries);
         }
-        //为什么两种情况返回的executor是不一样的?一个用了get一个没有用?  
-        // DML使用了 AssignOnce<AbstractQueryExecutor *> 类型的 executor，这可能是一个封装，用于确保执行器对象只被赋值一次
+        // 为什么两种情况返回的executor是不一样的?一个用了get一个没有用?  
+        // DML使用了 AssignOnce<AbstractQueryExecutor *> 类型的 executor，用于确保执行器对象只被赋值一次
         // 当尝试从这个封装中获取执行器对象以返回时，使用了 .get() 方法来获取封装内部的指针。
         return executor.get();
     } else if (ddl_dispatcher->canDo(lex)) {

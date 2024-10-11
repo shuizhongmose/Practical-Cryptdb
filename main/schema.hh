@@ -64,8 +64,8 @@ public:
 private:
     // first in list is lowest layer
     std::vector<std::unique_ptr<EncLayer> > layers;
-    const std::string onionname;
-    const unsigned long uniq_count;
+    const std::string onionname; // 列名
+    const unsigned long uniq_count; // 用于onionmeta的排序
     SECLEVEL minimum_seclevel;
     /*what are those keys used for?*/
     mutable std::list<std::unique_ptr<UIntMetaKey>> generated_keys;

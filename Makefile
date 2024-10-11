@@ -16,8 +16,8 @@ CXXFLAGS := -g -O0 -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
 	    -Wextra -Wmissing-noreturn -Wwrite-strings -Wno-unused-parameter \
 	    -Wno-deprecated \
 	    -Wmissing-declarations -Woverloaded-virtual  \
-	    -Wunreachable-code -D_GNU_SOURCE -std=c++0x -I$(TOP) -g
-LDFLAGS  := -L$(TOP)/$(OBJDIR) -L/usr/local/lib -Wl,--no-undefined
+	    -Wunreachable-code -D_GNU_SOURCE -std=c++0x -I$(TOP)
+LDFLAGS  := -g -O0 -L$(TOP)/$(OBJDIR) -L/usr/local/lib -Wl,--no-undefined
 
 
 ## Use RPATH only for debug builds; set RPATH=1 in config.mk.
@@ -81,7 +81,7 @@ $(OBJDIR)/%.o: $(OBJDIR)/%.cc
 
 mtl/%:$(OBJDIR)/debug/%.o
 	@mkdir -p $(@D)
-	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
 
 

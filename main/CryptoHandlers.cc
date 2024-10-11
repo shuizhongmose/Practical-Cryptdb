@@ -525,6 +525,7 @@ RND_int::encrypt(const Item &ptext, uint64_t IV) const
     cinteger.checkValue(p);
 
     const uint64_t c = bf.encrypt(p ^ IV);
+    cinteger.checkValue(c);
     // LOG(encl) << "RND_int encrypt " << p << " IV " << IV << "-->" << c;
 
     return new (current_thd->mem_root)
@@ -831,7 +832,6 @@ DET_abstract_integer::encrypt(const Item &ptext, uint64_t IV) const
     getCInteger_().checkValue(value);
 
     const ulonglong res = static_cast<ulonglong>(getBlowfish_().encrypt(value));
-    // LOG(encl) << "DET_int enc " << value << "--->" << res;
     return new (current_thd->mem_root) Item_int(res);
 }
 
@@ -1300,7 +1300,7 @@ OPE_int::encrypt(const Item &ptext, uint64_t IV) const
 
     if (MYSQL_TYPE_VARCHAR != this->cinteger.getFieldType()) {
         const ulonglong enc = uint64FromZZ(ope.encrypt(ZZFromUint64(pval)));
-        return new Item_int(enc);
+        return new (current_thd->mem_root) Item_int(enc);
     }
 
     // > the result of the encryption could be larger than 64 bits so

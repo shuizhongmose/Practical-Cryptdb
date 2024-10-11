@@ -16,7 +16,12 @@ echo =============COMPILE MYSQL================================
 rm -rf mysql-src
 tar -xvf packages/mysql-src.tar.gz
 export CXX=g++-4.7
-cd mysql-src;mkdir build;cd build;cmake -DWITH_EMBEDDED_SERVER=on -DENABLE_DTRACE=off .. ; make;cd ../..;
+cd mysql-src;mkdir build;cd build
+cmake -DWITH_EMBEDDED_SERVER=on -DENABLE_DTRACE=off .. ;
+# DEBUG模式
+# cmake -DWITH_EMBEDDED_SERVER=ON -DCMAKE_BUILD_TYPE=Debug -DWITH_DEBUG=1 ..
+make;
+cd ../..;
 
 echo ===============OK========================================
 
