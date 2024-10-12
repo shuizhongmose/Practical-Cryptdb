@@ -525,7 +525,6 @@ RND_int::encrypt(const Item &ptext, uint64_t IV) const
     cinteger.checkValue(p);
 
     const uint64_t c = bf.encrypt(p ^ IV);
-    cinteger.checkValue(c);
     // LOG(encl) << "RND_int encrypt " << p << " IV " << IV << "-->" << c;
 
     return new (current_thd->mem_root)
@@ -1300,7 +1299,10 @@ OPE_int::encrypt(const Item &ptext, uint64_t IV) const
 
     if (MYSQL_TYPE_VARCHAR != this->cinteger.getFieldType()) {
         const ulonglong enc = uint64FromZZ(ope.encrypt(ZZFromUint64(pval)));
-        return new (current_thd->mem_root) Item_int(enc);
+        // 为什么不使用`return new (current_thd->mem_root)Item_int(enc);`
+        // 在prepare阶段，current_thd->stmt_arena->is_stmt_prepare() 返回 true。
+        // 在 prepare 状态下使用 mem_root 分配内存会带来不一致的生命周期管理问题，导致断言失败。
+        return new Item_int(enc);
     }
 
     // > the result of the encryption could be larger than 64 bits so

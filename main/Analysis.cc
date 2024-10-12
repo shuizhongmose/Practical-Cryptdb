@@ -362,7 +362,7 @@ SharedProxyState::SharedProxyState(ConnectionInfo ci,
                                    const std::string &embed_dir,
                                    const std::string &master_key,
                                    SECURITY_RATING default_sec_rating)
-    : masterKey(std::unique_ptr<AES_KEY>(getKey(master_key))),
+    : masterKey(std::shared_ptr<AES_KEY>(getKey(master_key))),
       embed_dir(embed_dir),
       mysql_dummy(SharedProxyState::db_init(embed_dir)), // HACK: Allows
                                                    // connections in init
@@ -406,7 +406,7 @@ SharedProxyState::SharedProxyState(ConnectionInfo ci,
 }
 
 SharedProxyState::~SharedProxyState() {
-
+    LOG(debug) << "---> destory SharedProxyState " << this;
 }
 
 int
@@ -426,7 +426,7 @@ ProxyState::defaultSecurityRating() const
     return shared.defaultSecurityRating();
 }
 
-const std::unique_ptr<AES_KEY> &
+const std::shared_ptr<AES_KEY> &
 ProxyState::getMasterKey() const
 {
     return shared.getMasterKey();

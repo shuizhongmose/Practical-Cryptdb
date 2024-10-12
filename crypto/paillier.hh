@@ -111,6 +111,7 @@ private:
     pthread_cond_t queue_cond;
     bool wrapperStop;
     bool randgenRunning;
+    bool threadRunning;
     static void* randgenWorkerWrapper(void* context);
     void workerHandler();
 };

@@ -593,6 +593,7 @@ cryptdb_lib[] = {
 void cleanupFunction() {
     // 执行清理操作
     // 例如释放动态分配的内存、关闭文件等
+    LOG(debug) << "---> begin to clean shared_ps " << shared_ps;
     delete shared_ps;
 }
 

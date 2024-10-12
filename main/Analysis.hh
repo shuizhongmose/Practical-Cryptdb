@@ -82,7 +82,7 @@ typedef struct SharedProxyState {
         return default_sec_rating;
     }
 
-    const std::unique_ptr<AES_KEY> &getMasterKey() const
+    const std::shared_ptr<AES_KEY> &getMasterKey() const
     {
         return masterKey;
     }
@@ -92,7 +92,7 @@ typedef struct SharedProxyState {
     friend class ProxyState;
 
 private:
-    const std::unique_ptr<AES_KEY> masterKey;
+    const std::shared_ptr<AES_KEY> masterKey;
     const std::string &embed_dir;
     const int mysql_dummy;
     const std::unique_ptr<Connect> conn;
@@ -108,7 +108,7 @@ public:
     ~ProxyState();
 
     SECURITY_RATING defaultSecurityRating() const;
-    const std::unique_ptr<AES_KEY> &getMasterKey() const;
+    const std::shared_ptr<AES_KEY> &getMasterKey() const;
     const std::unique_ptr<Connect> &getConn() const;
     const std::unique_ptr<Connect> &getEConn() const;
     void safeCreateEmbeddedTHD();
@@ -265,7 +265,7 @@ class Analysis {
 
 public:
     Analysis(const std::string &default_db, const SchemaInfo &schema,
-             const std::unique_ptr<AES_KEY> &master_key,
+             const std::shared_ptr<AES_KEY> &master_key,
              SECURITY_RATING default_sec_rating)
         : pos(0), inject_alias(false), summation_hack(false),
           db_name(default_db), schema(schema), master_key(master_key),
@@ -350,7 +350,7 @@ public:
     const SchemaInfo &getSchema() const {return schema;}
     std::vector<std::unique_ptr<Delta> > deltas;
     std::string getDatabaseName() const {return db_name;}
-    const std::unique_ptr<AES_KEY> &getMasterKey() const {return master_key;}
+    const std::shared_ptr<AES_KEY> &getMasterKey() const {return master_key;}
     SECURITY_RATING getDefaultSecurityRating() const
         {return default_sec_rating;}
     // access to isAlias(...)
@@ -360,7 +360,7 @@ private:
     //name for the default db
     const std::string db_name;
     const SchemaInfo &schema;
-    const std::unique_ptr<AES_KEY> &master_key;
+    const std::shared_ptr<AES_KEY> &master_key;
     const SECURITY_RATING default_sec_rating;
     bool isAlias(const std::string &db,
                  const std::string &table) const;

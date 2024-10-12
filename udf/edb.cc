@@ -300,7 +300,7 @@ cryptdb_decrypt_text_sem(UDF_INIT *const initid, UDF_ARGS *const args,
 
             const uint64_t salt = getui(args, 2);
 
-            const std::unique_ptr<AES_KEY> aesKey(get_AES_dec_key(key));
+            const std::shared_ptr<AES_KEY> aesKey(get_AES_dec_key(key));
             value =
                 decrypt_SEM(reinterpret_cast<unsigned char *>(eValueBytes),
                             eValueLen, aesKey.get(), salt);
@@ -366,7 +366,7 @@ cryptdb_decrypt_text_det(UDF_INIT *const initid, UDF_ARGS *const args,
             char *const keyBytes = getba(args, 1, keyLen);
             const std::string key = std::string(keyBytes, keyLen);
 
-            const std::unique_ptr<AES_KEY> aesKey(get_AES_dec_key(key));
+            const std::shared_ptr<AES_KEY> aesKey(get_AES_dec_key(key));
             value =
                 decrypt_AES_CMC(std::string(eValueBytes,
                                     static_cast<unsigned int>(eValueLen)),

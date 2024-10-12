@@ -1,5 +1,6 @@
 #include <crypto/paillier.hh>
 #include <NTL/BasicThreadPool.h>
+#include <util/cryptdb_log.hh>
 #include <sstream>
 
 using namespace std;
@@ -13,12 +14,16 @@ Paillier::Paillier() : nbits(0), wrapperStop(false), randgenRunning(false){
 }
 
 Paillier::~Paillier(){
+    LOG(debug) << "---> Destrory Paillier " << this;
     pthread_mutex_lock(&setting_mutex);
-    wrapperStop = false;
-    pthread_cond_signal(&queue_cond);
+    wrapperStop = true;
+    randgenRunning = false;
+    pthread_cond_broadcast(&queue_cond);  // 唤醒等待的线程，确保它们能正确退出
     pthread_mutex_unlock(&setting_mutex);
-
-    pthread_join(thread, NULL);
+    
+    if (threadRunning == true) {
+        pthread_join(thread, NULL);
+    }
 
     pthread_cond_destroy(&queue_cond);
     pthread_mutex_destroy(&setting_mutex);
@@ -29,16 +34,17 @@ Paillier::~Paillier(){
 Paillier::Paillier(const vector<ZZ> &pk)
     : n(pk[0]), g(pk[1]), 
       nbits(NumBits(n)), n2(n*n), 
-      wrapperStop(false), randgenRunning(false)
+      wrapperStop(false), randgenRunning(false), threadRunning(false)
 {
     throw_c(pk.size() == 2);
-
+    LOG(debug) << "---> new Paillier " << this;
     rand_gen(10);
 
     // ADD: 线程相关
     pthread_mutex_init(&setting_mutex, NULL);
     pthread_cond_init(&queue_cond, NULL);
     pthread_create(&thread, NULL, randgenWorkerWrapper, this);
+    threadRunning = true;
 }
 
 void* Paillier::randgenWorkerWrapper(void* context) {
@@ -47,19 +53,28 @@ void* Paillier::randgenWorkerWrapper(void* context) {
 }
 
 void Paillier::workerHandler() {
-    // 该线程是非线程安全向 `rqueue`中添加随机数
-    while(!wrapperStop) {
+    // 该线程是非线程安全向 `rqueue` 中添加随机数
+    while (!wrapperStop) {
         pthread_mutex_lock(&setting_mutex);
-        while (rqueue.size()>5 && !wrapperStop) {
+        while (rqueue.size() > 5 && !wrapperStop) {
             pthread_cond_wait(&queue_cond, &setting_mutex);
         }
 
+        // 如果 wrapperStop 被设置为 true，直接退出
+        if (wrapperStop) {
+            pthread_mutex_unlock(&setting_mutex);
+            break;
+        }
+
+        // 生成随机数
         rand_gen(100);
-        pthread_mutex_lock(&setting_mutex);
+
         randgenRunning = false;
         pthread_mutex_unlock(&setting_mutex);
     }
-}   
+    
+    threadRunning = false;
+}
 
 void
 Paillier::rand_gen(size_t niter, size_t nmax)

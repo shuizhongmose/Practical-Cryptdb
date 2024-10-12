@@ -31,7 +31,7 @@ static void testCreateTableHandler(std::string query){
     //load all metadata and then store it in schema
     loadChildren(schema.get());
    
-    const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
+    const std::shared_ptr<AES_KEY> &TK = std::shared_ptr<AES_KEY>(getKey(std::string("113341234")));
 
     //just like what we do in Rewrite::rewrite,dispatchOnLex
     Analysis analysis(std::string("tdb"),*schema,TK,

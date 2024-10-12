@@ -25,8 +25,8 @@ New features added
 + foreign key constraint
 
 ```
-create table student (id integer primary key);
-create table choose (sid integer, foreign key fk(sid) references student(id));
+create table student (id integer primary key) ENGINE=InnoDB;
+create table choose (sid integer, foreign key fk(sid) references student(id)) ENGINE=InnoDB;
 insert into student values(1);
 insert into choose values(1);
 

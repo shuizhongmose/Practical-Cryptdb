@@ -263,4 +263,4 @@ private:
     const unsigned int id;
 };
 
-typedef std::shared_ptr<const SchemaInfo> SchemaInfoRef;
+typedef std::weak_ptr<const SchemaInfo> SchemaInfoRef;

@@ -16,8 +16,8 @@ CXXFLAGS := -g -O0 -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
 	    -Wextra -Wmissing-noreturn -Wwrite-strings -Wno-unused-parameter \
 	    -Wno-deprecated \
 	    -Wmissing-declarations -Woverloaded-virtual  \
-	    -Wunreachable-code -D_GNU_SOURCE -std=c++0x -I$(TOP)
-LDFLAGS  := -g -O0 -L$(TOP)/$(OBJDIR) -L/usr/local/lib -Wl,--no-undefined
+	    -Wunreachable-code -D_GNU_SOURCE -std=c++0x -I$(TOP) -g
+LDFLAGS  := -L$(TOP)/$(OBJDIR) -L/usr/local/lib -Wl,--no-undefined
 
 
 ## Use RPATH only for debug builds; set RPATH=1 in config.mk.

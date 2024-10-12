@@ -236,7 +236,7 @@ void parseResType(const ResType &rd) {
 //first step of back
 static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db = "tdb",
                                                                std::string table="student1"){
-     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
+     const std::shared_ptr<AES_KEY> &TK = std::shared_ptr<AES_KEY>(getKey(std::string("113341234")));
      Analysis analysis(db,schema,TK,
                         SECURITY_RATING::SENSITIVE);
      if(analysis.databaseMetaExists(db)){
@@ -309,7 +309,7 @@ static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
     //load all metadata and then store it in schema
     loadChildren(schema.get());
 
-    Analysis analysis(std::string("student"),*schema,std::unique_ptr<AES_KEY>(getKey(std::string("113341234"))),
+    Analysis analysis(std::string("student"),*schema,std::shared_ptr<AES_KEY>(getKey(std::string("113341234"))),
                         SECURITY_RATING::SENSITIVE);
     return schema;
 }

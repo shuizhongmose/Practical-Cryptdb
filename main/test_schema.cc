@@ -136,7 +136,7 @@ static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
         };
     //load all metadata and then store it in schema
     loadChildren(schema.get());
-    //Analysis analysis(std::string("student"),*schema,std::unique_ptr<AES_KEY>(getKey(std::string("113341234"))),
+    //Analysis analysis(std::string("student"),*schema,std::shared_ptr<AES_KEY>(getKey(std::string("113341234"))),
     //                    SECURITY_RATING::SENSITIVE);
     //test_Analysis(analysis);
     return schema;

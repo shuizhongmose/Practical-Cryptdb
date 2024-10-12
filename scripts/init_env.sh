@@ -1,8 +1,9 @@
 #!/bin/bash
 # set -e
 
-sudo pkill -9 sysbench
-sudo pkill -9 mysql-proxy
+# -9 是立即停止，不会给程序机会去执行任何清理代码
+sudo pkill -15 sysbench
+sudo pkill -15 mysql-proxy
 
 sudo netstat -pntl | grep 3307
 
