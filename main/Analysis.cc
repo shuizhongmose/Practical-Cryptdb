@@ -368,7 +368,7 @@ SharedProxyState::SharedProxyState(ConnectionInfo ci,
       mysql_dummy(SharedProxyState::db_init(embed_dir)), // HACK: Allows
                                                    // connections in init
                                                    // list.
-      conn(std::move(new Connect(ci.server, ci.user, ci.passwd, ci.port))),
+      conn(std::unique_ptr<Connect>(new Connect(ci.server, ci.user, ci.passwd, ci.port))),
       default_sec_rating(default_sec_rating),
       cache(std::move(SchemaCache()))
 {
@@ -448,30 +448,16 @@ ProxyState::getEConn() const
 static void
 embeddedTHDCleanup(THD *thd)
 {
-    // size_t before = getCurrentRSS();
-    // if (thd) {
-    //     LOG(debug) << "=====> clean THD " << thd;
-    //     // 清理与当前线程相关的查询和语句资源
-    //     thd->end_statement();            // 结束语句的处理，清理与语句相关的资源
-    //     thd->cleanup_after_query();      // 清理与查询相关的内容，确保内存被正确回收
-
-    //     // 关闭线程打开的表
-    //     close_thread_tables(thd);        // 关闭与当前线程相关的所有表，释放内存和锁
-
-    //     // 释放事务锁
-    //     thd->mdl_context.release_transactional_locks();  // 释放所有与事务相关的锁，避免锁泄漏
-
-    //     // 结束 MySQL 线程
-    //     mysql_thread_end();              // 结束线程，清理线程本地存储和相关资源
-
-    //     // 释放 THD 的内存池
-    //     free_root(thd->mem_root, MYF(MY_ALLOW_ZERO_PTR)); // 释放 THD 相关的 MEM_ROOT 内存池，确保所有内存得到回收
-
-    //     // // 删除 THD 对象
-    //     // delete thd;                      // 删除 THD 对象，调用其析构函数，确保所有关联资源被释放
-    // }
-    // size_t after = getCurrentRSS();
-    // LOG(debug) << "=====> clean THD " << thd << ", Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
+    // 参考 `mysql-src/libmysqld/lib_sql.cc` 中 `static void emb_free_embedded_thd(MYSQL *mysql)` 的代码清空THD
+    if (thd) {
+        thd->clear_data_list();
+        thread_count--;
+        thd->store_globals();
+        thd->unlink();
+        delete thd;
+        my_pthread_setspecific_ptr(THR_THD,  0);
+        thd=0;
+    }
 }
 
 void
@@ -480,7 +466,6 @@ ProxyState::safeCreateEmbeddedTHD()
     //THD is created by new, so there is no Lex or other things in it.    
     THD *thd = static_cast<THD *>(create_embedded_thd(0));
     
-    // LOG(debug) << "+++++++ current_thd in ProxyState::safeCreateEmbeddedTHD =" << current_thd;
     thds.push_back(std::unique_ptr<THD,
                                    void (*)(THD *)>(thd,
                                        &embeddedTHDCleanup));
