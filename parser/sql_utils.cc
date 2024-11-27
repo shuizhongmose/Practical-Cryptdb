@@ -40,6 +40,7 @@ init_mysql(const string &embed_db){
     assert(0 == mysql_thread_init());
 }
 
+// HACK: NOT used
 void clear_embeddedmysql() {
     if (lib_initialized == true) {
         mysql_thread_end();

@@ -158,7 +158,11 @@ connect(lua_State *const L) {
                      << "server = " << server << ":" << port << "; "
                      << "user = " << user << "; "
                      << "password = " << psswd;
-
+        
+        // FIXME: First execute mysql_library_init
+        // ERROR：Connect::do_connect中的mysql_library_init与Connect::getEmbedded中的不一样，如果用同一个就无法进行查询操作
+        // init_mysql(embed_dir);
+    
         const std::string &false_str = "FALSE";
         const std::string &mkey      = "113341234";  // XXX do not change as
                                                      // it's used for tpcc exps
@@ -606,14 +610,9 @@ cryptdb_lib[] = {
 };
 
 
-// void cleanupFunction() {
-//     // // 执行清理操作
-//     // // 例如释放动态分配的内存、关闭文件等
-//     // LOG(debug) << "---> begin to clean shared_ps " << shared_ps;
-//     // if (shared_ps)
-//     //     delete shared_ps;
-//     mysql_library_end();
-// }
+void cleanupFunction() {
+    clear_embeddedmysql();
+}
 
 extern "C" int lua_cryptdb_init(lua_State * L);
 

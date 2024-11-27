@@ -39,18 +39,18 @@ void
 Connect::do_connect(const std::string &server, const std::string &user,
                     const std::string &passwd, uint port)
 {
-    // if (__sync_bool_compare_and_swap(&client_lib_initialized, false, true)) {
-    //     const char *dummy_argv[] = {
-    //         "progname",
-    //         "--skip-grant-tables",
-    //         "--skip-innodb",
-    //         "--default-storage-engine=MEMORY",
-    //         "--character-set-server=utf8",
-    //         "--language=" MYSQL_BUILD_DIR "/sql/share/"
-    //     };
-    //     assert(0 == mysql_library_init(sizeof(dummy_argv)/sizeof(*dummy_argv),
-    //                                 const_cast<char**>(dummy_argv), 0));
-    // }
+    if (__sync_bool_compare_and_swap(&client_lib_initialized, false, true)) {
+        const char *dummy_argv[] = {
+            "progname",
+            "--skip-grant-tables",
+            "--skip-innodb",
+            "--default-storage-engine=MEMORY",
+            "--character-set-server=utf8",
+            "--language=" MYSQL_BUILD_DIR "/sql/share/"
+        };
+        assert(0 == mysql_library_init(sizeof(dummy_argv)/sizeof(*dummy_argv),
+                                    const_cast<char**>(dummy_argv), 0));
+    }
 
     conn = mysql_init(NULL);
 
@@ -82,7 +82,7 @@ Connect::do_connect(const std::string &server, const std::string &user,
 
 std::unique_ptr<Connect> Connect::getEmbedded(const std::string &embed_db)
 {
-    // init_mysql(embed_db);
+    init_mysql(embed_db);
     std::unique_ptr<MYSQL, decltype(&mysql_close)> m(mysql_init(nullptr), mysql_close);
     assert(m);
 
