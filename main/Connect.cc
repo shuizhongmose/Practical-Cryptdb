@@ -19,12 +19,14 @@
 #include <parser/mysql_type_metadata.hh>
 
 __thread ProxyState *thread_ps = NULL;
+static bool client_lib_initialized = false;
 
 Connect::Connect(const std::string &server, const std::string &user,
                  const std::string &passwd, uint port)
-    : conn(nullptr), close_on_destroy(true)
+    : conn(nullptr), close_on_destroy(true), is_embedded(false)
 {
     do_connect(server, user, passwd, port);
+    LOG(debug) << "---> new Connect " << this;
 }
 
 bool
@@ -37,16 +39,18 @@ void
 Connect::do_connect(const std::string &server, const std::string &user,
                     const std::string &passwd, uint port)
 {
-    const char *dummy_argv[] = {
-        "progname",
-        "--skip-grant-tables",
-        "--skip-innodb",
-        "--default-storage-engine=MEMORY",
-        "--character-set-server=utf8",
-        "--language=" MYSQL_BUILD_DIR "/sql/share/"
-    };
-    assert(0 == mysql_library_init(sizeof(dummy_argv)/sizeof(*dummy_argv),
-                                   const_cast<char**>(dummy_argv), 0));
+    // if (__sync_bool_compare_and_swap(&client_lib_initialized, false, true)) {
+    //     const char *dummy_argv[] = {
+    //         "progname",
+    //         "--skip-grant-tables",
+    //         "--skip-innodb",
+    //         "--default-storage-engine=MEMORY",
+    //         "--character-set-server=utf8",
+    //         "--language=" MYSQL_BUILD_DIR "/sql/share/"
+    //     };
+    //     assert(0 == mysql_library_init(sizeof(dummy_argv)/sizeof(*dummy_argv),
+    //                                 const_cast<char**>(dummy_argv), 0));
+    // }
 
     conn = mysql_init(NULL);
 
@@ -76,22 +80,28 @@ Connect::do_connect(const std::string &server, const std::string &user,
     }
 }
 
-Connect *Connect::getEmbedded(const std::string &embed_db)
+std::unique_ptr<Connect> Connect::getEmbedded(const std::string &embed_db)
 {
-    init_mysql(embed_db);
-
-    MYSQL *const m = mysql_init(0);
+    // init_mysql(embed_db);
+    std::unique_ptr<MYSQL, decltype(&mysql_close)> m(mysql_init(nullptr), mysql_close);
     assert(m);
 
-    mysql_options(m, MYSQL_OPT_USE_EMBEDDED_CONNECTION, 0);
-
-    if (!mysql_real_connect(m, 0, 0, 0, 0, 0, 0,
-                            CLIENT_MULTI_STATEMENTS)) {
-        mysql_close(m);
-        thrower() << "mysql_real_connect: " << mysql_error(m);
+    if (mysql_options(m.get(), MYSQL_OPT_USE_EMBEDDED_CONNECTION, nullptr) != 0) {
+        throw std::runtime_error("Failed to set embedded connection option: " + std::string(mysql_error(m.get())));
     }
 
-    return new Connect(m);
+    if (!mysql_real_connect(m.get(), nullptr, nullptr, nullptr, 
+                            nullptr, 0, nullptr,
+                            CLIENT_MULTI_STATEMENTS)) {
+        mysql_close(m.get());
+        thrower() << "mysql_real_connect: " << mysql_error(m.get());
+    }
+
+    return std::unique_ptr<Connect>(new Connect(m.release()));
+}
+
+void Connect::set_embedded_flag(bool val) {
+    is_embedded = val;
 }
 
 // @multiple_resultsets causes us to ignore query results.
@@ -158,7 +168,7 @@ Connect::execute(const std::string &query, std::unique_ptr<DBResult> *res,
     // else {
     //     assert(create_embedded_thd(0));
     // }
-
+    // mysql_thread_end();
     return success;
 }
 
@@ -220,6 +230,7 @@ Connect::~Connect()
 {
     if (close_on_destroy) {
         mysql_close(conn);
+        LOG(debug) << "---> destory Connect " << this;
     }
 }
 

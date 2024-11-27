@@ -45,10 +45,12 @@ class Connect {
     Connect(const std::string &server, const std::string &user,
             const std::string &passwd, uint port = 0);
 
-    Connect(MYSQL *const _conn) : conn(_conn), close_on_destroy(true) { }
+    Connect(MYSQL *const _conn) : conn(_conn), close_on_destroy(true), is_embedded(true) { 
+      LOG(debug) << "---> new Connect 2222 " << this;
+    }
 
     //returns Connect for the embedded server
-    static Connect *getEmbedded(const std::string &embed_dir);
+    static std::unique_ptr<Connect> getEmbedded(const std::string &embed_db);
 
     // returns true if execution was ok; caller must delete DBResult
     bool execute(const std::string &query, std::unique_ptr<DBResult> *res,
@@ -67,6 +69,7 @@ class Connect {
     unsigned int get_mysql_errno();
 
     uint64_t get_affected_rows();
+    void set_embedded_flag(bool val);
 
     ~Connect();
 
@@ -77,6 +80,7 @@ class Connect {
                     const std::string &passwd, uint port);
 
     bool close_on_destroy;
+    bool is_embedded;
 };
 
 bool strictMode(Connect *const c);

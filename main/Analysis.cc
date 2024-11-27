@@ -5,6 +5,7 @@
 #include <main/macro_util.hh>
 #include <main/stored_procedures.hh>
 #include <util/util.hh>
+#include <sql_parse.h>
 
 // FIXME: Wrong interfaces.
 EncSet::EncSet(Analysis &a, FieldMeta * const fm) {
@@ -367,7 +368,7 @@ SharedProxyState::SharedProxyState(ConnectionInfo ci,
       mysql_dummy(SharedProxyState::db_init(embed_dir)), // HACK: Allows
                                                    // connections in init
                                                    // list.
-      conn(new Connect(ci.server, ci.user, ci.passwd, ci.port)),
+      conn(std::move(new Connect(ci.server, ci.user, ci.passwd, ci.port))),
       default_sec_rating(default_sec_rating),
       cache(std::move(SchemaCache()))
 {
@@ -387,7 +388,7 @@ SharedProxyState::SharedProxyState(ConnectionInfo ci,
     }
 
     std::unique_ptr<Connect>
-        init_e_conn(Connect::getEmbedded(embed_dir));
+        init_e_conn = Connect::getEmbedded(embed_dir);
     assert(conn && init_e_conn);
 
     const std::string prefix = 
@@ -447,16 +448,30 @@ ProxyState::getEConn() const
 static void
 embeddedTHDCleanup(THD *thd)
 {
-    // FIXME: 未进入调用
-    thd->clear_data_list();
-    --thread_count;
-    // thd->unlink() is called in by THD destructor
-    // > THD::~THD()
-    //     ilink::~ilink()
-    //       ilink::unlink()
-    // free_root(thd->main_mem_root, 0) is called in THD::~THD
-    delete thd;
-    thd = nullptr;
+    // size_t before = getCurrentRSS();
+    // if (thd) {
+    //     LOG(debug) << "=====> clean THD " << thd;
+    //     // 清理与当前线程相关的查询和语句资源
+    //     thd->end_statement();            // 结束语句的处理，清理与语句相关的资源
+    //     thd->cleanup_after_query();      // 清理与查询相关的内容，确保内存被正确回收
+
+    //     // 关闭线程打开的表
+    //     close_thread_tables(thd);        // 关闭与当前线程相关的所有表，释放内存和锁
+
+    //     // 释放事务锁
+    //     thd->mdl_context.release_transactional_locks();  // 释放所有与事务相关的锁，避免锁泄漏
+
+    //     // 结束 MySQL 线程
+    //     mysql_thread_end();              // 结束线程，清理线程本地存储和相关资源
+
+    //     // 释放 THD 的内存池
+    //     free_root(thd->mem_root, MYF(MY_ALLOW_ZERO_PTR)); // 释放 THD 相关的 MEM_ROOT 内存池，确保所有内存得到回收
+
+    //     // // 删除 THD 对象
+    //     // delete thd;                      // 删除 THD 对象，调用其析构函数，确保所有关联资源被释放
+    // }
+    // size_t after = getCurrentRSS();
+    // LOG(debug) << "=====> clean THD " << thd << ", Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
 }
 
 void
@@ -464,6 +479,7 @@ ProxyState::safeCreateEmbeddedTHD()
 {
     //THD is created by new, so there is no Lex or other things in it.    
     THD *thd = static_cast<THD *>(create_embedded_thd(0));
+    
     // LOG(debug) << "+++++++ current_thd in ProxyState::safeCreateEmbeddedTHD =" << current_thd;
     thds.push_back(std::unique_ptr<THD,
                                    void (*)(THD *)>(thd,
@@ -474,10 +490,7 @@ ProxyState::safeCreateEmbeddedTHD()
 
 void ProxyState::dumpTHDs()
 {
-    // // DELETE: thds.clear()即可清理线程信息了，并且it.release() 会释放内存管理权限，还会造成泄露
-    // for (auto &it: thds) {
-    //     LOG(debug) << "clear thread ("<< it.get() <<") in dumpTHDs";
-    // }
+    // DELETE: thds.clear()即可清理线程信息了，并且it.release() 会释放内存管理权限，还会造成泄露
     thds.clear();
 
     assert(thds.empty() && "thds is not empty after clear");
@@ -975,14 +988,5 @@ lexToQuery(const LEX &lex)
 {
     std::ostringstream o;
     o << const_cast<LEX &>(lex);
-
-    // // 清空lex中的 field_list、many_values、update_list、value_list、create_list等
-    auto &mutable_lex = const_cast<LEX &>(lex);
-    mutable_lex.field_list.delete_elements();
-    mutable_lex.many_values.delete_elements();
-    mutable_lex.update_list.delete_elements();
-    mutable_lex.value_list.delete_elements();
-    mutable_lex.alter_info.create_list.delete_elements();
-    mutable_lex.alter_info.reset();
     return o.str();
 }

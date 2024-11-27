@@ -263,7 +263,8 @@ rewrite(lua_State *const L) {
     const std::string client = xlua_tolstring(L, 1);
     if (clients.find(client) == clients.end()) {
         lua_pushnil(L);
-        xlua_pushlstring(L, "failed to recognize client");     
+        xlua_pushlstring(L, "failed to recognize client");  
+        mysql_thread_end();   
         return 2;
     }
 
@@ -305,15 +306,18 @@ rewrite(lua_State *const L) {
         } catch (const AbstractException &e) {
             lua_pushboolean(L, false);              // status
             xlua_pushlstring(L, e.to_string());     // error message
+            mysql_thread_end();
             return 2;
         } catch (const CryptDBError &e) {
             lua_pushboolean(L, false);              // status
             xlua_pushlstring(L, e.msg);             // error message
+            mysql_thread_end();
             return 2;
         }
     }
     lua_pushboolean(L, true);                       // status
     lua_pushnil(L);                                 // error message
+    mysql_thread_end();
     return 2;
 }
 
@@ -437,6 +441,7 @@ next(lua_State *const L) {
         xlua_pushlstring(L, "12345");
 
         nilBuffer(L, 1);
+        mysql_thread_end();
         return 5;
     }
 
@@ -500,6 +505,7 @@ next(lua_State *const L) {
             nilBuffer(L, 3);
             // ADD: 返回结果后清空相关线程信息
             ps->dumpTHDs();
+            mysql_thread_end();
             
             return 5;
         }
@@ -512,13 +518,20 @@ next(lua_State *const L) {
             returnResultSet(L, res);        // pushes 4 items on stack
             // ADD: 返回结果后清空相关线程信息
             ps->dumpTHDs();
+            mysql_thread_end();
             return 5;
         }
         default:
-            assert(false);
             // ADD: 不是任何类型，代表为空是不是也可以清空线程空间？
             ps->dumpTHDs();
+            mysql_thread_end();
+            assert(false);
         }
+        
+        if (new_results.second) {
+            delete new_results.second;
+        }
+        
     } catch (const ErrorPacketException &e) {
         // lua_pop(L, lua_gettop(L));
         xlua_pushlstring(L, "error");
@@ -529,8 +542,11 @@ next(lua_State *const L) {
         nilBuffer(L, 1);
         // ADD: 错误清空相关线程信息
         ps->dumpTHDs();
+        mysql_thread_end();
         return 5;
     }
+    ps->dumpTHDs();
+    mysql_thread_end();
     return 5;
 }
 
@@ -590,12 +606,14 @@ cryptdb_lib[] = {
 };
 
 
-void cleanupFunction() {
-    // 执行清理操作
-    // 例如释放动态分配的内存、关闭文件等
-    LOG(debug) << "---> begin to clean shared_ps " << shared_ps;
-    delete shared_ps;
-}
+// void cleanupFunction() {
+//     // // 执行清理操作
+//     // // 例如释放动态分配的内存、关闭文件等
+//     // LOG(debug) << "---> begin to clean shared_ps " << shared_ps;
+//     // if (shared_ps)
+//     //     delete shared_ps;
+//     mysql_library_end();
+// }
 
 extern "C" int lua_cryptdb_init(lua_State * L);
 
@@ -603,10 +621,10 @@ int
 lua_cryptdb_init(lua_State *const L) {
     // SetNumThreads(AvailableThreads());
     SetNumThreads(1);
-    if (atexit(cleanupFunction) != 0) {
-        LOG(error) << "无法注册清理函数";
-        return 0;
-    }
+    // if (atexit(cleanupFunction) != 0) {
+    //     LOG(error) << "无法注册清理函数";
+    //     return 0;
+    // }
     luaL_openlib(L, "CryptDB", cryptdb_lib, 0);
     return 1;
 }

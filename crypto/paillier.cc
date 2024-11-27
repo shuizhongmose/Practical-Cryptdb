@@ -1,4 +1,5 @@
 #include <crypto/paillier.hh>
+#include <errno.h>
 #include <NTL/BasicThreadPool.h>
 #include <util/cryptdb_log.hh>
 #include <sstream>
@@ -14,15 +15,15 @@ Paillier::Paillier() : nbits(0), wrapperStop(false), randgenRunning(false){
 }
 
 Paillier::~Paillier(){
-    LOG(debug) << "---> Destrory Paillier " << this;
     pthread_mutex_lock(&setting_mutex);
     wrapperStop = true;
     randgenRunning = false;
     pthread_cond_broadcast(&queue_cond);  // 唤醒等待的线程，确保它们能正确退出
     pthread_mutex_unlock(&setting_mutex);
     
-    if (threadRunning == true) {
-        pthread_join(thread, NULL);
+    errno = pthread_join(thread, NULL);
+    if (errno != 0) {
+        LOG(error) << "Error: Detaching thread: " << errno;
     }
 
     pthread_cond_destroy(&queue_cond);
@@ -37,7 +38,6 @@ Paillier::Paillier(const vector<ZZ> &pk)
       wrapperStop(false), randgenRunning(false), threadRunning(false)
 {
     throw_c(pk.size() == 2);
-    LOG(debug) << "---> new Paillier " << this;
     rand_gen(10);
 
     // ADD: 线程相关
@@ -74,6 +74,7 @@ void Paillier::workerHandler() {
     }
     
     threadRunning = false;
+    pthread_exit(NULL);  // 确保线程安全退出
 }
 
 void

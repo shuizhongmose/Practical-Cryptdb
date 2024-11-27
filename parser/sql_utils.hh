@@ -15,6 +15,8 @@
 void
 init_mysql(const std::string & embed_db);
 
+void clear_embeddedmysql();
+
 class ResType {
 public:
     const bool ok;  // query executed successfully

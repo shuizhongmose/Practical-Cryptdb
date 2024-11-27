@@ -26,17 +26,25 @@ init_mysql(const string &embed_db){
 
     const char *mysql_av[] =
     { "progname",
-            "--skip-grant-tables",
-            dir_arg,
-            /* "--skip-innodb", */
-            /* "--default-storage-engine=MEMORY", */
-            "--character-set-server=utf8",
-            "--language=" MYSQL_BUILD_DIR "/sql/share/"
+        "--skip-grant-tables",
+        dir_arg,
+        /* "--skip-innodb", */
+        /* "--default-storage-engine=MEMORY", */
+        "--character-set-server=utf8",
+        "--language=" MYSQL_BUILD_DIR "/sql/share/"
     };
 
     assert(0 == mysql_library_init(sizeof(mysql_av)/sizeof(mysql_av[0]),
                                   (char**) mysql_av, 0));
+    LOG(debug) << "---> call mysql_library_init";
     assert(0 == mysql_thread_init());
+}
+
+void clear_embeddedmysql() {
+    if (lib_initialized == true) {
+        mysql_thread_end();
+        mysql_library_end();
+    }
 }
 
 char *
@@ -68,4 +76,3 @@ printItemToString(const Item &i){
     o << i;
     return o.str();
 }
-
