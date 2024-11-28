@@ -611,7 +611,8 @@ cryptdb_lib[] = {
 
 
 void cleanupFunction() {
-    clear_embeddedmysql();
+    // clear_embeddedmysql();
+    Rewriter::cleanup();
 }
 
 extern "C" int lua_cryptdb_init(lua_State * L);
@@ -620,10 +621,10 @@ int
 lua_cryptdb_init(lua_State *const L) {
     // SetNumThreads(AvailableThreads());
     SetNumThreads(1);
-    // if (atexit(cleanupFunction) != 0) {
-    //     LOG(error) << "无法注册清理函数";
-    //     return 0;
-    // }
+    if (atexit(cleanupFunction) != 0) {
+        LOG(error) << "无法注册清理函数";
+        return 0;
+    }
     luaL_openlib(L, "CryptDB", cryptdb_lib, 0);
     return 1;
 }

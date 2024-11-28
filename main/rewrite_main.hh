@@ -83,6 +83,7 @@ public:
 
     static ResType
         decryptResults(const ResType &dbres, const ReturnMeta &rm);
+    static bool cleanup();
 
 private:
     static AbstractQueryExecutor *

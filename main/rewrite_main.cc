@@ -806,6 +806,21 @@ buildTypeTextTranslatorHack(){
     return true;
 }
 
+static bool 
+cleanTypeTextTranslatorHack(){
+    // 在完成操作后，手动清理各类型的实例
+    TypeText<onion>::clearSet();
+    TypeText<SECLEVEL>::clearSet();
+    TypeText<enum_field_types>::clearSet();
+    TypeText<Item::Type>::clearSet();
+    TypeText<enum_enable_or_disable>::clearSet();
+    TypeText<onionlayout>::clearSet();
+    TypeText<Field::geometry_type>::clearSet();
+    TypeText<SECURITY_RATING>::clearSet();
+    TypeText<CompletionType>::clearSet();
+    return true;
+}
+
 //l gets updated to the new level
 static std::string
 removeOnionLayer(const Analysis &a, const TableMeta &tm,
@@ -1240,6 +1255,10 @@ noRewrite(const LEX &lex) {
 
 const bool Rewriter::translator_dummy = buildTypeTextTranslatorHack();
 
+bool Rewriter::cleanup() {
+    return cleanTypeTextTranslatorHack();
+}
+
 const std::unique_ptr<SQLDispatcher> Rewriter::dml_dispatcher =
     std::unique_ptr<SQLDispatcher>(buildDMLDispatcher());
 
@@ -1382,9 +1401,11 @@ Rewriter::rewrite(const std::string &q, const SchemaInfo &schema,
     AbstractQueryExecutor *const executor =
         Rewriter::dispatchOnLex(analysis, q);
     if (!executor) {
+        mysql_thread_end();
         return QueryRewrite(true, analysis.rmeta, analysis.kill_zone,
                             new NoOpExecutor());       
     }
+    mysql_thread_end();
     return QueryRewrite(true, analysis.rmeta, analysis.kill_zone, executor);
 }
 

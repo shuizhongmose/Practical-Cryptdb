@@ -106,5 +106,6 @@ main(int argc,char ** argv) {
     }
 
     clear_embeddedmysql();
+    Rewriter::cleanup();
     return 0;
 }

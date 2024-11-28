@@ -4,7 +4,6 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
-#include <memory>  // For std::unique_ptr
 
 #include <util/util.hh>
 
@@ -59,9 +58,16 @@ public:
             throw "enums and text must be the same length!";
         }
 
-        // Create the instance using new (C++11 style)
-        TypeText<_type>::instance.reset(new TypeText<_type>(enums, texts));
+        TypeText<_type>::instance = new TypeText<_type>(enums, texts);
+
         return;
+    }
+
+    static void clearSet() {
+        if (TypeText<_type>::instance) {
+            delete TypeText<_type>::instance; // 删除实例
+            TypeText<_type>::instance = nullptr; // 将静态指针设置为 nullptr
+        }
     }
 
     static std::vector<std::string> allText() {
@@ -104,7 +110,8 @@ protected:
     // Instance.
     std::vector<std::string> theTexts;
     std::vector<_type> theEnums;
-    static std::unique_ptr<TypeText> instance;  // Changed to unique_ptr
+    static TypeText *instance;
 };
 
-template<typename _type> std::unique_ptr<TypeText<_type>> TypeText<_type>::instance = nullptr;
+template<typename _type> TypeText<_type>* TypeText<_type>::instance = NULL;
+

@@ -368,7 +368,7 @@ SharedProxyState::SharedProxyState(ConnectionInfo ci,
       mysql_dummy(SharedProxyState::db_init(embed_dir)), // HACK: Allows
                                                    // connections in init
                                                    // list.
-      conn(std::unique_ptr<Connect>(new Connect(ci.server, ci.user, ci.passwd, ci.port))),
+      conn(new Connect(ci.server, ci.user, ci.passwd, ci.port)),
       default_sec_rating(default_sec_rating),
       cache(std::move(SchemaCache()))
 {
