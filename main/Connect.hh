@@ -45,9 +45,7 @@ class Connect {
     Connect(const std::string &server, const std::string &user,
             const std::string &passwd, uint port = 0);
 
-    Connect(MYSQL *const _conn) : conn(_conn), close_on_destroy(true), is_embedded(true) { 
-      LOG(debug) << "---> new Connect 2222 " << this;
-    }
+    Connect(MYSQL *const _conn) : conn(_conn), close_on_destroy(true), is_embedded(true) { }
 
     //returns Connect for the embedded server
     static std::unique_ptr<Connect> getEmbedded(const std::string &embed_db);

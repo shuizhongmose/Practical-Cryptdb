@@ -39,6 +39,8 @@
 #include <util/cryptdb_log.hh>
 #include <util/enum_text.hh>
 #include <util/yield.hpp>
+#include <util/scoped_lock.hh>
+#include <util/ctr.hh>
 
 #include <sstream>
 #include <unistd.h>
@@ -55,7 +57,9 @@ public:
     std::string default_db;
 
     WrapperState() {}
-    ~WrapperState() {}
+    ~WrapperState() {
+        LOG(debug) << "destory client " << this;
+    }
     const std::unique_ptr<QueryRewrite> &getQueryRewrite() const {
         assert(this->qr);
         return this->qr;
@@ -89,6 +93,9 @@ struct big_proxy{
     std::string embeddedDir="/t/cryt/shadow";
 
     big_proxy(std::string db = "tdb");
+
+    ~big_proxy();
+    
     void myNext(std::string client,bool isFirst,ResType inRes);
     void batchTogether(std::string client, std::string curQuery,unsigned long long _thread_id);
     bool myRewrite(std::string curQuery,unsigned long long _thread_id,std::string client);

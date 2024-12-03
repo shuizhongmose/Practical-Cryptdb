@@ -1313,6 +1313,7 @@ AbstractQueryExecutor *
 Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
 {
     // step1. 将查询转换为LEX格式
+    size_t before = getCurrentRSS();
     std::unique_ptr<query_parse> p;
     try {
         p = std::unique_ptr<query_parse>(
@@ -1322,6 +1323,8 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
                               "Error Data: " + e.msg);
     }
     LEX *const lex = p->lex();
+    size_t after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after chagne lex, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
 
     // step2. 根据查询类型（DML、DDL等），选择合适的查询执行器（AbstractQueryExecutor）
     // optimization: do not process queries that we will not rewrite
@@ -1339,14 +1342,23 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
         const SQLHandler &handler = dml_dispatcher->dispatch(lex);
         AssignOnce<AbstractQueryExecutor *> executor;
         try {
+            before = getCurrentRSS();
             executor = handler.transformLex(a, lex);
+            after = getCurrentRSS();
+            LOG(debug) << ">>>>>>> after handler.transformLex, Total memory: " 
+                        << after << " bytes, Memory usage change: " 
+                        << (after - before) << " bytes, and current_thd is: "
+                        << current_thd;
         } catch (OnionAdjustExcept e) {
             // LOG(cdb_v) << "caught onion adjustment";
 
             //We use deltas to remove layers in the metadata, and queyrs to decrypt data.
+            before = getCurrentRSS();
             std::pair<std::vector<std::unique_ptr<Delta> >,
                       std::list<std::string> >
                 out_data = adjustOnion(a, e.o, e.tm, e.fm, e.tolevel);
+            after = getCurrentRSS();    
+            LOG(debug) << ">>>>>>> after adjustOnion, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
             std::vector<std::unique_ptr<Delta> > &deltas = out_data.first;
             const std::list<std::string> &adjust_queries = out_data.second;
 

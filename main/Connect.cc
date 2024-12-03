@@ -26,7 +26,6 @@ Connect::Connect(const std::string &server, const std::string &user,
     : conn(nullptr), close_on_destroy(true), is_embedded(false)
 {
     do_connect(server, user, passwd, port);
-    LOG(debug) << "---> new Connect " << this;
 }
 
 bool
@@ -48,11 +47,14 @@ Connect::do_connect(const std::string &server, const std::string &user,
             "--character-set-server=utf8",
             "--language=" MYSQL_BUILD_DIR "/sql/share/"
         };
+        
+        LOG(debug) << "begin to call mysql_library_init 111111 ";
         assert(0 == mysql_library_init(sizeof(dummy_argv)/sizeof(*dummy_argv),
                                     const_cast<char**>(dummy_argv), 0));
     }
 
     conn = mysql_init(NULL);
+    LOG(debug) << "mysql_init conn: " << conn;
 
     /* Connect via TCP, and not via Unix domain sockets */
     const uint proto = MYSQL_PROTOCOL_TCP;
@@ -80,11 +82,20 @@ Connect::do_connect(const std::string &server, const std::string &user,
     }
 }
 
+// 自定义删除器，打印日志并调用 mysql_close
+void mysql_deleter(MYSQL* mysql) {
+    if (mysql) {
+        std::cout << "Closing MySQL connection " << mysql;
+        mysql_close(mysql);  // 关闭 MySQL 连接
+    }
+}
+
 std::unique_ptr<Connect> Connect::getEmbedded(const std::string &embed_db)
 {
     init_mysql(embed_db);
-    std::unique_ptr<MYSQL, decltype(&mysql_close)> m(mysql_init(nullptr), mysql_close);
+    std::unique_ptr<MYSQL, decltype(&mysql_deleter)> m(mysql_init(nullptr), mysql_deleter);
     assert(m);
+    LOG(debug) << "new embedded mysql conn " << m.get();
 
     if (mysql_options(m.get(), MYSQL_OPT_USE_EMBEDDED_CONNECTION, nullptr) != 0) {
         throw std::runtime_error("Failed to set embedded connection option: " + std::string(mysql_error(m.get())));
@@ -229,8 +240,8 @@ Connect::get_affected_rows(){
 Connect::~Connect()
 {
     if (close_on_destroy) {
+        LOG(debug) << "close conn "<< conn;
         mysql_close(conn);
-        LOG(debug) << "---> destory Connect " << this;
     }
 }
 

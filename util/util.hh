@@ -20,6 +20,7 @@
 #include <sstream>
 #include <algorithm>
 #include <assert.h>
+#include <memory>
 
 #include <sys/time.h>
 
@@ -372,7 +373,7 @@ public:
         if (true == frozen) {
             throw CryptDBError("Object has already been assigned to!");
         } else {
-            this->value = new T(value);
+            this->value = std::unique_ptr<T>(new T(std::move(value)));
             frozen = true;
             return *this;
         }
@@ -390,7 +391,7 @@ public:
     }
 
 private:
-    T *value;
+    std::unique_ptr<T> value;
     bool frozen;
 };
 
@@ -573,3 +574,5 @@ destructThenFree(void *const p)
 }
 
 bool test64bitZZConversions();
+
+size_t getCurrentRSS();

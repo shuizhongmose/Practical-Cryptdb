@@ -650,15 +650,21 @@ encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
     Item *new_enc = NULL;
     //这段代码体现了层次加密,也就是说, 通过IV,每个洋葱的层次通过enclayer来表示
     //直接调用其加密和解密函数, 就可以完成加密工作. 加密以后获得的是Item,最后返回加密以后的结果
-    struct timeval start, end;
-    double duration = 0;
+    // struct timeval start, end;
+    // double duration = 0;
     for (const auto &it : enc_layers) {
-        // LOG(encl) << "encrypt layer "
-        //          << TypeText<SECLEVEL>::toText(it->level()) << "\n";
-        gettimeofday(&start, nullptr);
+        LOG(encl) << "encrypt layer "
+                 << TypeText<SECLEVEL>::toText(it->level());
+        // gettimeofday(&start, nullptr);
+        size_t before = getCurrentRSS();
         new_enc = it->encrypt(*enc, IV);
-        gettimeofday(&end, nullptr);
-        duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+        size_t after = getCurrentRSS();
+        LOG(debug) << ">>>>>>> after it->encrypt, Total memory: " 
+                    << after << " bytes, Memory usage change: " 
+                    << (after - before) << " bytes, and current_thd is :"
+                    << current_thd;
+        // gettimeofday(&end, nullptr);
+        // duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
         // LOG(debug) << it->name() << "::encrypt duration is " << duration;
         assert(new_enc);
         enc = new_enc;
@@ -685,18 +691,18 @@ void
 encrypt_item_all_onions(const Item &i, const FieldMeta &fm,
                         uint64_t IV, Analysis &a, std::vector<Item*> *l)
 {
-    struct timeval start, end;
-    double duration = 0;
+    // struct timeval start, end;
+    // double duration = 0;
     for (auto it : fm.orderedOnionMetas()) {
         const onion o = it.first->getValue();
         OnionMeta * const om = it.second;
         //一个fieldmeta表示一个field, 内部的不同洋葱表现在onionMeta,每个onionMeta的不同层次表现
         //在enclyer. 而保持的时候, 是onometekey,onoinmeta这种pair来让我们知道这个onionMeta是哪种
         //枚举的洋葱类型.
-        gettimeofday(&start, nullptr);
+        // gettimeofday(&start, nullptr);
         l->push_back(encrypt_item_layers(i, o, *om, a, IV));
-        gettimeofday(&end, nullptr);
-        duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+        // gettimeofday(&end, nullptr);
+        // duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
         // LOG(debug) << "eencrypt duration is " << duration;
     }
 }

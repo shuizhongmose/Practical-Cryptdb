@@ -57,7 +57,14 @@ void rewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
     std::vector<Item *> l;
     //这里先做lookup, 找到类以后调用内部的结果, 试试
     //对于普通的student操作, 最后调用的是ANON的typical_rewrite_insert_type来进行重写.
+    size_t before = getCurrentRSS();
     itemTypes.do_rewrite_insert(i, fm, a, &l);
+    size_t after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after do_rewrite_insert, Total memory: " 
+               << after << " bytes, Memory usage change: " 
+               << (after - before) << " bytes, and item type is: " 
+               << i.type() << ", and current_thd is: "
+               << current_thd;
     for (auto it : l) {
         append_list->push_back(it);
     }
@@ -66,12 +73,10 @@ void rewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
 std::vector<Item *> rewriteInsertHelper2(const Item &i, const FieldMeta &fm, Analysis &a,
                         THD* holdThd, pthread_mutex_t *memRootMutex)
 {
-    // std::cout << "main/dml_handler.cc:69 begin rewriteInsertHelper2 ......" << std::endl;
     std::vector<Item *> l;
     //这里先做lookup, 找到类以后调用内部的结果, 试试
     //对于普通的student操作, 最后调用的是ANON的typical_rewrite_insert_type来进行重写.
     itemTypes.do_rewrite_insert(i, fm, a, &l, holdThd, memRootMutex);
-    // std::cout << "main/dml_handler.cc:74 finish rewriteInsertHelper2" << std::endl;
     return l;
 }
 
@@ -80,7 +85,6 @@ std::vector<Item *> rewriteInsertHelper2(const Item &i, const FieldMeta &fm, Ana
 std::vector<Item *> fieldListRewriteThdFunc(std::vector<FieldMeta *> &fmVec, 
                         const Item *const i, std::string db_name, Analysis &a,
                         THD* holdThd, pthread_mutex_t &memRootMutex) {
-    // std::cout << "main/dml_handler.cc:83 A ha, I am in fieldListRewriteThdFunc ...." << std::endl;
     TEST_TextMessageError(i->type() == Item::FIELD_ITEM,
                             "Expected field item!");
     const Item_field *const ifd =
@@ -120,6 +124,7 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
 
 AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) const{
         // FIXME：new_lex是来自lex的浅拷贝
+    size_t before = getCurrentRSS();
     LEX *const new_lex = copyWithTHD(lex);
     const std::string &table =
         lex->select_lex.table_list.first->table_name;
@@ -128,11 +133,14 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
     TEST_DatabaseDiscrepancy(db_name, a.getDatabaseName());
     //from databasemeta to tablemeta.
     const TableMeta &tm = a.getTableMeta(db_name, table);
-
+    size_t after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after new lex, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
     //rewrite table name
+    before = getCurrentRSS();
     new_lex->select_lex.table_list.first =
         rewrite_table_list(lex->select_lex.table_list.first, a);
-
+    after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after rewrite table name, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
     // -------------------------
     // Fields (and default data)
     // -------------------------
@@ -144,11 +152,12 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
     std::vector<FieldMeta *> fmVec;
     std::vector<Item *> implicit_defaults;
 
-    struct timeval start, end;
-    double duration = 0;
+    // struct timeval start, end;
+    // double duration = 0;
     // 使用rewriteInsertHelper对SQL进行重写
     // For insert, we can choose to specify field list or omit it.
     // LOG(debug) << "---------> current_thd = " << current_thd << " <----------";
+    before = getCurrentRSS();
     if (lex->field_list.head()) {
         auto it = List_iterator<Item>(lex->field_list);
         List<Item> newList;
@@ -166,10 +175,10 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
                 a.getFieldMeta(db_name, ifd->table_name,
                                 ifd->field_name);
             fmVec.push_back(&fm);
-            gettimeofday(&start, nullptr);
+            // gettimeofday(&start, nullptr);
             rewriteInsertHelper(*i, fm, a, &newList);
-            gettimeofday(&end, nullptr);
-            duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+            // gettimeofday(&end, nullptr);
+            // duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
             // LOG(debug) << "duration is " << duration;
         }
 
@@ -204,10 +213,13 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
         std::vector<FieldMeta *> fmetas = tm.orderedFieldMetas();
         fmVec.assign(fmetas.begin(), fmetas.end());
     }
+    after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after rewrite field, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
 
     // -----------------
     //      Values
     // -----------------
+    before = getCurrentRSS();
     if (lex->many_values.head()) {
         //开始处理many values
         auto it = List_iterator<List_item>(lex->many_values);
@@ -239,11 +251,12 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
                     }
                     //获得values中的内容,并且通过fieldMeta好帮助完成rewrite工作
                     //每个value都要进行洋葱的加密.
-                    gettimeofday(&start, nullptr);
+                    // gettimeofday(&start, nullptr);
                     // LOG(debug) << "item type = " << i->type();
+                    
                     rewriteInsertHelper(*i, **fmVecIt, a, newList0);
-                    gettimeofday(&end, nullptr);
-                    duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+                    // gettimeofday(&end, nullptr);
+                    // duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
                     // LOG(debug) << "duration is " << duration;
                     ++fmVecIt;
                 }
@@ -257,12 +270,18 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
         // many_values 在lexToQuery中回收
         new_lex->many_values = newList;
     }
+    after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after rewrite value, Total memory: " 
+                << after << " bytes, Memory usage change: " 
+                << (after - before) << " bytes, and current_thd is: "
+                << current_thd;
 
 
     //对于普通的insert, 这部分的内容不会用到的.
     // -----------------------
     // ON DUPLICATE KEY UPDATE
     // -----------------------
+    before = getCurrentRSS();
     {
         auto fd_it = List_iterator<Item>(lex->update_list);
         auto val_it = List_iterator<Item>(lex->value_list);
@@ -276,7 +295,25 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
         new_lex->update_list = res_fields;
         new_lex->value_list = res_values;
     }
-    return new DMLQueryExecutor(*new_lex, a.rmeta);
+    after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after ON DUPLICATE KEY UPDATE, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
+
+    before = getCurrentRSS();
+    auto res = new DMLQueryExecutor(*new_lex, a.rmeta);
+    // 清空 lex 中的成员
+    new_lex->field_list.delete_elements();
+    new_lex->many_values.delete_elements();
+    new_lex->update_list.delete_elements();
+    new_lex->value_list.delete_elements();
+    new_lex->alter_info.create_list.delete_elements();
+    new_lex->alter_info.reset();
+    after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after new DMLQueryExecutor, Total memory: " 
+                << after << " bytes, Memory usage change: " 
+                << (after - before) << " bytes, and current_thd is: "
+                << current_thd;
+
+    return res;
 }
 
 AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) const{
@@ -306,8 +343,8 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
     std::vector<FieldMeta *> fmVec;
     std::vector<Item *> implicit_defaults;
 
-    struct timeval start, end;
-    double duration = 0;
+    // struct timeval start, end;
+    // double duration = 0;
     LOG(debug) << "----> here here is right.";
     
     // 使用rewriteInsertHelper对SQL进行重写
@@ -342,9 +379,9 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
             thdPool.addTask(ThdTask{task_func, static_cast<size_t>(idx)});
         }
     
-        struct timeval start, end;
-        double duration = 0;
-        gettimeofday(&start, nullptr);
+        // struct timeval start, end;
+        // double duration = 0;
+        // gettimeofday(&start, nullptr);
         // step2. 等待所有任务完成
         LOG(debug) << "----> I am waiting for completion.";
         thdPool.waitForCompletion();
@@ -362,9 +399,9 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
             }
         }
         LOG(debug) << "----> thread tasks all done.";
-        gettimeofday(&end, nullptr);
-        duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-        LOG(debug) << "----> duration is " << duration << "ms";
+        // gettimeofday(&end, nullptr);
+        // duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+        // LOG(debug) << "----> duration is " << duration << "ms";
         // Collect the implicit defaults.
         // > Such must be done because fields that can not have NULL
         // will be implicitly converted by mysql sans encryption.
@@ -434,11 +471,11 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
                     }
                     //获得values中的内容,并且通过fieldMeta好帮助完成rewrite工作
                     //每个field都要进行洋葱的加密.
-                    gettimeofday(&start, nullptr);
+                    // gettimeofday(&start, nullptr);
                     rewriteInsertHelper(*i, **fmVecIt, a, newList0);
-                    gettimeofday(&end, nullptr);
-                    duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-                    LOG(debug) << "duration is " << duration;
+                    // gettimeofday(&end, nullptr);
+                    // duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+                    // LOG(debug) << "duration is " << duration;
                     ++fmVecIt;
                 }
                 
@@ -681,7 +718,10 @@ class SelectHandler : public DMLHandler {
 
 AbstractQueryExecutor *DMLHandler::
 transformLex(Analysis &analysis, LEX *lex) const {
+    size_t before = getCurrentRSS();
     this->gather(analysis, lex);
+    size_t after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after gather, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
     return this->rewrite(analysis, lex);
 }
 

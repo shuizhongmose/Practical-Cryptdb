@@ -3,7 +3,20 @@ MYBUILD := $(MYSRC)/build
 RPATH := 1
 
 CXX := g++-4.8
-MYSQL_PLUGIN_DIR := /usr/lib/mysql/plugin
+
+# install mysql 5.5.60 on ubuntu 16.04 mannully in /usr/local/mysql
+UBUNTU_VERSION := $(shell lsb_release -rs)
+
+ifeq ($(UBUNTU_VERSION), 12.04)
+    MYSQL_PLUGIN_DIR := /usr/lib/mysql/plugin
+else ifeq ($(UBUNTU_VERSION), 16.04)
+    MYSQL_PLUGIN_DIR := /usr/local/mysql/lib/plugin
+else ifeq ($(UBUNTU_VERSION), 20.04)
+    MYSQL_PLUGIN_DIR := /usr/local/mysql/lib/plugin
+else
+    $(warning Unsupported Ubuntu version, defaulting MYSQL_PLUGIN_DIR to /usr/lib/mysql/plugin)
+    MYSQL_PLUGIN_DIR := /usr/lib/mysql/plugin
+endif
 
 
 OBJDIR	 := obj
@@ -11,12 +24,12 @@ TOP	 := $(shell echo $${PWD-`pwd`})
 #CXX	 := g++
 AR	 := ar
 ## -g -O0 -> -O2
-CXXFLAGS := -g -O0 -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
+CXXFLAGS := -g -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
 	    -Wall -Wpointer-arith -Wendif-labels -Wformat=2  \
 	    -Wextra -Wmissing-noreturn -Wwrite-strings -Wno-unused-parameter \
 	    -Wno-deprecated \
 	    -Wmissing-declarations -Woverloaded-virtual  \
-	    -Wunreachable-code -D_GNU_SOURCE -std=c++0x -I$(TOP) -g
+	    -Wunreachable-code -D_GNU_SOURCE -std=c++0x -I$(TOP)
 LDFLAGS  := -L$(TOP)/$(OBJDIR) -L/usr/local/lib -Wl,--no-undefined
 
 
@@ -81,7 +94,7 @@ $(OBJDIR)/%.o: $(OBJDIR)/%.cc
 
 mtl/%:$(OBJDIR)/debug/%.o
 	@mkdir -p $(@D)
-	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto 
 
 
 

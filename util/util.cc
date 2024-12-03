@@ -478,6 +478,7 @@ leadingZeros(const std::string &input, size_t count)
     // }
     // Calculate the number of zeros needed
     size_t numZeros = count - input.length();
+    LOG(debug) << "numZeros = " << numZeros;
 
     // Construct the leading zeros string
     std::string zeros(numZeros, '0');
@@ -571,4 +572,24 @@ test64bitZZConversions()
     }
 
     return true;
+}
+
+size_t getCurrentRSS() {
+    std::ifstream file("/proc/self/status");
+    std::string line;
+    size_t rss = 0;
+
+    while (std::getline(file, line)) {
+        if (line.find("VmRSS:") == 0) {
+            std::istringstream iss(line);
+            std::string key;
+            size_t value;
+            std::string unit;
+            iss >> key >> value >> unit;
+            rss = value * 1024; // 转换为字节
+            break;
+        }
+    }
+
+    return rss;
 }

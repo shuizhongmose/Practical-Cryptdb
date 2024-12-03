@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <malloc.h>
 
 #include<util/util.hh>
 
@@ -14,16 +15,21 @@ vector<string> queries{
     "create database if not exists tdb2;",
     "use tdb2;",
     "create table if not exists student(id integer, name varchar(50),age integer) ENGINE=InnoDB;",
-    "INSERT INTO student VALUES (1, 'shao', 20);",
-    "INSERT INTO student VALUES (2, 'xiaocai', 21);",
-    "INSERT INTO student VALUES (3, 'nans', 22);",
-    "INSERT INTO student VALUES (4, 'hehe', 23);",
-    "INSERT INTO student VALUES (5, 'oo', 24);",
-    "INSERT INTO student VALUES (6, 'lihua', 19);",
-    "INSERT INTO student VALUES (7, 'wangwu', 20);",
-    "INSERT INTO student VALUES (8, 'zhaoliu', 21);",
-    "INSERT INTO student VALUES (9, 'liming', 22);",
-    "INSERT INTO student VALUES (10, 'zhangsan', 23);"
+    // "INSERT INTO student VALUES (1, 'shao', 20);",
+    // "INSERT INTO student VALUES (2, 'xiaocai', 21);",
+    // "INSERT INTO student VALUES (3, 'nans', 22);",
+    // "INSERT INTO student VALUES (4, 'hehe', 23);",
+    // "INSERT INTO student VALUES (5, 'oo', 24);",
+    // "INSERT INTO student VALUES (6, 'lihua', 19);",
+    // "INSERT INTO student VALUES (7, 'wangwu', 20);",
+    // "INSERT INTO student VALUES (8, 'zhaoliu', 21);",
+    // "INSERT INTO student VALUES (9, 'liming', 22);",
+    // "INSERT INTO student VALUES (10, 'zhangsan', 23);",
+    // "INSERT INTO student VALUES (11, 'xiaoming', 23);",
+    // "INSERT INTO student VALUES (12, 'xiaoqiang', 23);",
+    // "INSERT INTO student VALUES (13, 'xiaoning', 23);",
+    // "INSERT INTO student VALUES (14, 'weida', 23);",
+    // "INSERT INTO student VALUES (15, 'yiyi', 23);"
     // "INSERT INTO student VALUES (1, 'shao', 20), (2, 'xiaocai', 21), (3, 'nans', 22), (4, 'hehe', 23), (5, 'oo', 24);",
     // "INSERT INTO student VALUES (6, 'lihua', 19), (7, 'wangwu', 20), (8, 'zhaoliu', 21), (9, 'liming', 22), (10, 'zhangsan', 23);",
     // "INSERT INTO student VALUES (11, 'lisi', 20), (12, 'xiaoming', 24), (13, 'xiaohong', 23), (14, 'dazhuang', 22), (15, 'xiaobai', 21);",
@@ -80,18 +86,18 @@ main(int argc,char ** argv) {
     {
         big_proxy b;
         
-        // // 插入10000行数据
-        // std::ostringstream oss;
-        // for (int i=1; i<=100; i+=5) {
-        //     oss.str("");
-        //     oss << "INSERT INTO student VALUES ("
-        //         << i << ", 'shao" << i << "', 20), "
-        //         << "(" << i+1 << ", 'xiaocai" << i << "', 21), "
-        //         << "(" << i+2 << ", 'nans" << i << "', 22), "
-        //         << "(" << i+3 << ", 'hehe" << i << "', 23), "
-        //         << "(" << i+4 << ", 'oo" << i << "', 24);";
-        //     queries.push_back(oss.str());
-        // }
+        // 插入10000行数据
+        std::ostringstream oss;
+        for (int i=1; i<=100; i+=5) {
+            oss.str("");
+            oss << "INSERT INTO student VALUES ("
+                << i << ", 'shao" << i << "', 20), "
+                << "(" << i+1 << ", 'xiaocai" << i << "', 21), "
+                << "(" << i+2 << ", 'nans" << i << "', 22), "
+                << "(" << i+3 << ", 'hehe" << i << "', 23), "
+                << "(" << i+4 << ", 'oo" << i << "', 24);";
+            queries.push_back(oss.str());
+        }
 
         for(auto query:queries){
             LOG(debug) <<"============================ beging ============================";
@@ -107,5 +113,8 @@ main(int argc,char ** argv) {
 
     clear_embeddedmysql();
     Rewriter::cleanup();
+    size_t after = getCurrentRSS();
+    LOG(debug) << "malloc_trim(0) = " << malloc_trim(0);
+    LOG(debug) << "Total memory at end of program: " << after;
     return 0;
 }

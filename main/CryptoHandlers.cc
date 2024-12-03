@@ -1291,11 +1291,11 @@ reverse(const std::string &s)
 Item *
 OPE_int::encrypt(const Item &ptext, uint64_t IV) const
 {
-    // LOG(debug) << "-------- current_thd in OPE_int::encrypt =" << current_thd;
+    LOG(debug) << "-------- current_thd in OPE_int::encrypt =" << current_thd;
     const uint64_t pval = RiboldMYSQL::val_uint(ptext);
     cinteger.checkValue(pval);
 
-    // LOG(encl) << "OPE_int encrypt " << pval << " IV " << IV << std::endl;
+    LOG(encl) << "OPE_int encrypt " << pval << " IV " << IV << std::endl;
 
     if (MYSQL_TYPE_VARCHAR != this->cinteger.getFieldType()) {
         const ulonglong enc = uint64FromZZ(ope.encrypt(ZZFromUint64(pval)));
@@ -1311,10 +1311,14 @@ OPE_int::encrypt(const Item &ptext, uint64_t IV) const
     //   from high to low order bytes
     // > leading zeros must be added because not all numbers will span the
     //   allotted bytes and we don't want mysql to do a misaligned comparison
+    size_t before = getCurrentRSS();
     const std::string &enc_string =
         leadingZeros(reverse(StringFromZZ(ope.encrypt(ZZFromUint64(pval)))),
                      this->ciph_size);
-
+    size_t after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after leadingZeros, Total memory: " 
+                << after << " bytes, Memory usage change: " 
+                << (after - before) << " bytes";
 
     return new (current_thd->mem_root) Item_string(make_thd_string(enc_string),
                            enc_string.length(),
@@ -1369,7 +1373,7 @@ OPE_str::newCreateField(const Create_field &cf,
 Item *
 OPE_str::encrypt(const Item &ptext, uint64_t IV) const
 {
-    // LOG(debug) << "-------- current_thd in OPE_str::encrypt =" << current_thd;
+    LOG(debug) << "-------- current_thd in OPE_str::encrypt =" << current_thd;
     std::string ps = toUpperCase(ItemToString(ptext));
     if (ps.size() < plain_size)
         ps = ps + std::string(plain_size - ps.size(), 0);
@@ -1403,6 +1407,7 @@ HOMFactory::create(const Create_field &cf, const std::string &key)
         FAIL_TextMessageError("decimal support is broken");
     }
 
+    LOG(debug) << "----> in HOMFactory::create";
     return std::unique_ptr<EncLayer>(new HOM(cf, key));
 }
 
@@ -1411,6 +1416,7 @@ HOMFactory::deserialize(unsigned int id, const SerialLayer &serial) {
     if (serial.name == "HOM_dec") {
         FAIL_TextMessageError("decimal support broken");
     }
+    LOG(debug) << "----> in HOMFactory::deserialize";
     return std::unique_ptr<EncLayer>(new HOM(id, serial.layer_info));
 }
 
@@ -1471,24 +1477,46 @@ HOM::newCreateField(const Create_field &cf,
 
 void
 HOM::unwait() const {
+    size_t before = getCurrentRSS();
     const std::unique_ptr<streamrng<arc4>>
         prng(new streamrng<arc4>(seed_key));
+    size_t after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after prng, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
+    if (sk != nullptr) {
+        delete sk;
+        sk = nullptr; // 防止悬空指针
+    }
+    before = getCurrentRSS();
     sk = new Paillier_priv(Paillier_priv::keygen(prng.get(), nbits));
+    after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after new Paillier_priv, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
+    std::cout << "Size of Paillier_priv: " << sizeof(*sk) << " bytes" << std::endl;
     waiting = false;
 }
 
+
 Item *
 HOM::encrypt(const Item &ptext, uint64_t IV) const{
-    // LOG(debug) << "-------- current_thd in HOM::encrypt =" << current_thd;
+    LOG(debug) << "-------- current_thd in HOM::encrypt =" << current_thd;
+
+    size_t before = getCurrentRSS();
     if (true == waiting) {
         this->unwait();
     }
-
+    size_t after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after unwait, Total memory: " 
+                << after << " bytes, Memory usage change: " 
+                << (after - before) << " bytes, and current_thd is: "
+                << current_thd;
+    before = getCurrentRSS();
     const ZZ enc = sk->encrypt(ItemIntToZZ(ptext));
+    after = getCurrentRSS();
+    LOG(debug) << ">>>>>>> after sk->encrypt, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
     
     // LOG(encl) << " HOME encrypt " << " IV " << IV << " ---> " << " enc " << enc;
     return ZZToItemStr(enc);
 }
+
 
 Item *
 HOM::decrypt(const Item &ctext, uint64_t IV) const
@@ -1566,6 +1594,8 @@ HOM::sumUDF(Item *const i1, Item *const i2) const
 
 HOM::~HOM() {
     delete sk;
+    LOG(debug) << "====> destory HOM "<< this << " at current thd " << current_thd;
+    
 }
 
 /******* SEARCH **************************/

@@ -4,7 +4,7 @@ echo =============INSTALL ENVIRONMENTs================================
 sudo apt-get update -y
 sudo apt-get remove bison libbison-dev -y
 sudo apt-get upgrade -y
-# ntl-5.4.2, gmp-5.0.2
+# ntl-5.4.2, gmp-5.0.2，如果用NTL 11.5.1 则不需要安装
 sudo apt-get install gcc-4.8 g++-4.8 gawk liblua5.1-0-dev libntl-dev libmysqlclient-dev libssl-dev libbsd-dev libevent-dev libglib2.0-dev libgmp-dev mysql-server libaio-dev automake gtk-doc-tools flex cmake libncurses5-dev make ruby lua5.1 libmysqld-dev exuberant-ctags cscope -y
 sudo apt-get install m4 -y
 
