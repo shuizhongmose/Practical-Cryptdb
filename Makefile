@@ -24,7 +24,7 @@ TOP	 := $(shell echo $${PWD-`pwd`})
 #CXX	 := g++
 AR	 := ar
 ## -g -O0 -> -O2
-CXXFLAGS := -g -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
+CXXFLAGS := -O2 -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
 	    -Wall -Wpointer-arith -Wendif-labels -Wformat=2  \
 	    -Wextra -Wmissing-noreturn -Wwrite-strings -Wno-unused-parameter \
 	    -Wno-deprecated \
@@ -94,7 +94,7 @@ $(OBJDIR)/%.o: $(OBJDIR)/%.cc
 
 mtl/%:$(OBJDIR)/debug/%.o
 	@mkdir -p $(@D)
-	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto 
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
 
 

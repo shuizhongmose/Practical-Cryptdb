@@ -57,14 +57,14 @@ void rewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
     std::vector<Item *> l;
     //这里先做lookup, 找到类以后调用内部的结果, 试试
     //对于普通的student操作, 最后调用的是ANON的typical_rewrite_insert_type来进行重写.
-    size_t before = getCurrentRSS();
+    // size_t before = getCurrentRSS();
     itemTypes.do_rewrite_insert(i, fm, a, &l);
-    size_t after = getCurrentRSS();
-    LOG(debug) << ">>>>>>> after do_rewrite_insert, Total memory: " 
-               << after << " bytes, Memory usage change: " 
-               << (after - before) << " bytes, and item type is: " 
-               << i.type() << ", and current_thd is: "
-               << current_thd;
+    // size_t after = getCurrentRSS();
+    // LOG(debug) << ">>>>>>> after do_rewrite_insert, Total memory: " 
+    //            << after << " bytes, Memory usage change: " 
+    //            << (after - before) << " bytes, and item type is: " 
+    //            << i.type() << ", and current_thd is: "
+    //            << current_thd;
     for (auto it : l) {
         append_list->push_back(it);
     }
@@ -124,7 +124,7 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
 
 AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) const{
         // FIXME：new_lex是来自lex的浅拷贝
-    size_t before = getCurrentRSS();
+    // size_t before = getCurrentRSS();
     LEX *const new_lex = copyWithTHD(lex);
     const std::string &table =
         lex->select_lex.table_list.first->table_name;
@@ -133,14 +133,14 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
     TEST_DatabaseDiscrepancy(db_name, a.getDatabaseName());
     //from databasemeta to tablemeta.
     const TableMeta &tm = a.getTableMeta(db_name, table);
-    size_t after = getCurrentRSS();
-    LOG(debug) << ">>>>>>> after new lex, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
+    // size_t after = getCurrentRSS();
+    // LOG(debug) << ">>>>>>> after new lex, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
     //rewrite table name
-    before = getCurrentRSS();
+    // before = getCurrentRSS();
     new_lex->select_lex.table_list.first =
         rewrite_table_list(lex->select_lex.table_list.first, a);
-    after = getCurrentRSS();
-    LOG(debug) << ">>>>>>> after rewrite table name, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
+    // after = getCurrentRSS();
+    // LOG(debug) << ">>>>>>> after rewrite table name, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
     // -------------------------
     // Fields (and default data)
     // -------------------------
@@ -157,7 +157,7 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
     // 使用rewriteInsertHelper对SQL进行重写
     // For insert, we can choose to specify field list or omit it.
     // LOG(debug) << "---------> current_thd = " << current_thd << " <----------";
-    before = getCurrentRSS();
+    // before = getCurrentRSS();
     if (lex->field_list.head()) {
         auto it = List_iterator<Item>(lex->field_list);
         List<Item> newList;
@@ -213,13 +213,13 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
         std::vector<FieldMeta *> fmetas = tm.orderedFieldMetas();
         fmVec.assign(fmetas.begin(), fmetas.end());
     }
-    after = getCurrentRSS();
-    LOG(debug) << ">>>>>>> after rewrite field, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
+    // after = getCurrentRSS();
+    // LOG(debug) << ">>>>>>> after rewrite field, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
 
     // -----------------
     //      Values
     // -----------------
-    before = getCurrentRSS();
+    // before = getCurrentRSS();
     if (lex->many_values.head()) {
         //开始处理many values
         auto it = List_iterator<List_item>(lex->many_values);
@@ -270,18 +270,18 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
         // many_values 在lexToQuery中回收
         new_lex->many_values = newList;
     }
-    after = getCurrentRSS();
-    LOG(debug) << ">>>>>>> after rewrite value, Total memory: " 
-                << after << " bytes, Memory usage change: " 
-                << (after - before) << " bytes, and current_thd is: "
-                << current_thd;
+    // after = getCurrentRSS();
+    // LOG(debug) << ">>>>>>> after rewrite value, Total memory: " 
+    //             << after << " bytes, Memory usage change: " 
+    //             << (after - before) << " bytes, and current_thd is: "
+    //             << current_thd;
 
 
     //对于普通的insert, 这部分的内容不会用到的.
     // -----------------------
     // ON DUPLICATE KEY UPDATE
     // -----------------------
-    before = getCurrentRSS();
+    // before = getCurrentRSS();
     {
         auto fd_it = List_iterator<Item>(lex->update_list);
         auto val_it = List_iterator<Item>(lex->value_list);
@@ -295,10 +295,10 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
         new_lex->update_list = res_fields;
         new_lex->value_list = res_values;
     }
-    after = getCurrentRSS();
-    LOG(debug) << ">>>>>>> after ON DUPLICATE KEY UPDATE, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
+    // after = getCurrentRSS();
+    // LOG(debug) << ">>>>>>> after ON DUPLICATE KEY UPDATE, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
 
-    before = getCurrentRSS();
+    // before = getCurrentRSS();
     auto res = new DMLQueryExecutor(*new_lex, a.rmeta);
     // 清空 lex 中的成员
     new_lex->field_list.delete_elements();
@@ -307,11 +307,11 @@ AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex) cons
     new_lex->value_list.delete_elements();
     new_lex->alter_info.create_list.delete_elements();
     new_lex->alter_info.reset();
-    after = getCurrentRSS();
-    LOG(debug) << ">>>>>>> after new DMLQueryExecutor, Total memory: " 
-                << after << " bytes, Memory usage change: " 
-                << (after - before) << " bytes, and current_thd is: "
-                << current_thd;
+    // after = getCurrentRSS();
+    // LOG(debug) << ">>>>>>> after new DMLQueryExecutor, Total memory: " 
+    //             << after << " bytes, Memory usage change: " 
+    //             << (after - before) << " bytes, and current_thd is: "
+    //             << current_thd;
 
     return res;
 }
@@ -345,7 +345,7 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
 
     // struct timeval start, end;
     // double duration = 0;
-    LOG(debug) << "----> here here is right.";
+    // LOG(debug) << "----> here here is right.";
     
     // 使用rewriteInsertHelper对SQL进行重写
     // For insert, we can choose to specify field list or omit it.
@@ -354,7 +354,7 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
     pthread_mutex_init(&memRootMutex, NULL);
     
     if (lex->field_list.head()) {
-        LOG(debug) << "----> has field list.";
+        // LOG(debug) << "----> has field list.";
         auto it = List_iterator<Item>(lex->field_list);
         List<Item> newList;
         // ****************field_list rewrite 多线程处理*****************************
@@ -367,7 +367,7 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
         for (int idx=0;; idx++) {
             const Item *const i = it++;
             if (!i) {
-                LOG(debug) << "i is null";
+                // LOG(debug) << "i is null";
                 break;
             }
             // 使用按值捕获，确保捕获的变量在 lambda 执行期间有效
@@ -375,7 +375,7 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
                 return fieldListRewriteThdFunc(fmVec, i, db_name, a, main_thd, memRootMutex);
             };
 
-            LOG(debug) << "----> add task to thread queue, idx = "<< idx << ", item = " << *i;
+            // LOG(debug) << "----> add task to thread queue, idx = "<< idx << ", item = " << *i;
             thdPool.addTask(ThdTask{task_func, static_cast<size_t>(idx)});
         }
     
@@ -383,22 +383,22 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
         // double duration = 0;
         // gettimeofday(&start, nullptr);
         // step2. 等待所有任务完成
-        LOG(debug) << "----> I am waiting for completion.";
+        // LOG(debug) << "----> I am waiting for completion.";
         thdPool.waitForCompletion();
         
-        LOG(debug) << "----> sort all results and add to newList....";
+        // LOG(debug) << "----> sort all results and add to newList....";
         // step3. Sort the results based on the task index
         thdPool.getSortedResults();
  
         // step4. 将所有结果加入`newList`
-        LOG(debug) << "----> add results to newList....";
+        // LOG(debug) << "----> add results to newList....";
         for (const auto& result_pair : thdPool.results) {
             const auto& result = result_pair.second;
             for (const auto& item : result) {
                 newList.push_back(item);
             }
         }
-        LOG(debug) << "----> thread tasks all done.";
+        // LOG(debug) << "----> thread tasks all done.";
         // gettimeofday(&end, nullptr);
         // duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
         // LOG(debug) << "----> duration is " << duration << "ms";
@@ -436,7 +436,7 @@ AbstractQueryExecutor * InsertHandler::rewrite_bk(Analysis &a, LEX *const lex) c
         fmVec.assign(fmetas.begin(), fmetas.end());
     }
 
-    LOG(debug) << "----> handle value list";
+    // LOG(debug) << "----> handle value list";
     // -----------------
     //      Values
     // -----------------
@@ -718,10 +718,10 @@ class SelectHandler : public DMLHandler {
 
 AbstractQueryExecutor *DMLHandler::
 transformLex(Analysis &analysis, LEX *lex) const {
-    size_t before = getCurrentRSS();
+    // size_t before = getCurrentRSS();
     this->gather(analysis, lex);
-    size_t after = getCurrentRSS();
-    LOG(debug) << ">>>>>>> after gather, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
+    // size_t after = getCurrentRSS();
+    // LOG(debug) << ">>>>>>> after gather, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
     return this->rewrite(analysis, lex);
 }
 

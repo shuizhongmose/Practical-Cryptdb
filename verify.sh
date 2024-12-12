@@ -54,6 +54,8 @@ run_with_valgrind_massif(){
             --massif-out-file=massif.out \
             --time-unit=B \
             --detailed-freq=1 \
+            --threshold=0 \
+            --pages-as-heap=no \
             ./obj/main/change_test > change_test.log 2>&1 &
 }
 

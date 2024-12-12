@@ -1,4 +1,6 @@
 #!/bin/bash
+# export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc.so.4
+export LD_PRELOAD=/usr/lib/libjemalloc.so.2
 
 # 获取第一个参数
 command=$1

@@ -13,16 +13,16 @@ class DMLQueryExecutor : public AbstractQueryExecutor {
 public:
     DMLQueryExecutor(const LEX &lex, const ReturnMeta &rmeta)
         : query(lexToQuery(lex)), rmeta(rmeta) {
-            LOG(debug) << "<<<<<< size of query is " << sizeof(query) 
-                       << " bytes, and size of rmeta is " << sizeof(rmeta)
-                       << " of " << this;
-            LOG(debug) << "query size: " << query.size();
-            LOG(debug) << "query capacity: " << query.capacity();
-            LOG(debug) << "rfmeta size: " << rmeta.rfmeta.size(); // 打印键值对的数量
-            LOG(debug) << "rfmeta capacity (approx): " << rmeta.rfmeta.size(); // 打印桶的数量（间接反映容量）
+            // LOG(debug) << "<<<<<< size of query is " << sizeof(query) 
+            //            << " bytes, and size of rmeta is " << sizeof(rmeta)
+            //            << " of " << this;
+            // LOG(debug) << "query size: " << query.size();
+            // LOG(debug) << "query capacity: " << query.capacity();
+            // LOG(debug) << "rfmeta size: " << rmeta.rfmeta.size(); // 打印键值对的数量
+            // LOG(debug) << "rfmeta capacity (approx): " << rmeta.rfmeta.size(); // 打印桶的数量（间接反映容量）
         }
     ~DMLQueryExecutor() {
-        LOG(debug) << "destory DMLQueryExecutor " << this;
+        // LOG(debug) << "destory DMLQueryExecutor " << this;
     }
     std::pair<ResultType, AbstractAnything *>
         nextImpl(const ResType &res, const NextParams &nparams);

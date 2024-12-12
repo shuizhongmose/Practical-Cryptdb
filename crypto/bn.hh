@@ -25,35 +25,45 @@ class _bignum_ctx {
 class bignum {
  public:
     bignum() {
-        BN_init(&b);
+        b = BN_new();  // 使用 BN_new 替代 BN_init
+        if (b == nullptr) throw std::runtime_error("BN_new failed");
     }
 
     bignum(unsigned long v) {
-        BN_init(&b);
-        BN_set_word(&b, v);
+        b = BN_new();  // 使用 BN_new
+        if (b == nullptr) throw std::runtime_error("BN_new failed");
+        if (!BN_set_word(b, v)) throw std::runtime_error("BN_set_word failed");
     }
 
     bignum(const bignum &other) {
-        BN_init(&b);
-        throw_c(BN_copy(&b, other.bn()));
+        b = BN_new();  // 使用 BN_new
+        if (b == nullptr) throw std::runtime_error("BN_new failed");
+        if (!BN_copy(b, other.bn())) throw std::runtime_error("BN_copy failed");
     }
 
     bignum(const uint8_t *buf, size_t nbytes) {
-        BN_init(&b);
-        throw_c(BN_bin2bn(buf, nbytes, &b));
+        b = BN_new();  // 使用 BN_new
+        if (b == nullptr) throw std::runtime_error("BN_new failed");
+        if (!BN_bin2bn(buf, nbytes, b)) throw std::runtime_error("BN_bin2bn failed");
     }
 
     bignum(const std::string &v) {
-        BN_init(&b);
-        throw_c(BN_bin2bn((uint8_t*) v.data(), v.size(), &b));
+        b = BN_new();  // 使用 BN_new
+        if (b == nullptr) throw std::runtime_error("BN_new failed");
+        if (!BN_bin2bn((uint8_t*) v.data(), v.size(), b)) throw std::runtime_error("BN_bin2bn failed");
     }
 
-    ~bignum() { BN_free(&b); }
+    ~bignum() {
+        if (b != nullptr) {
+            BN_free(b);  // 释放内存
+        }
+    }
 
-    BIGNUM *bn() { return &b; }
-    const BIGNUM *bn() const { return &b; }
+    BIGNUM *bn() { return b; }
+    const BIGNUM *bn() const { return b; }
+
     unsigned long word() const {
-        unsigned long v = BN_get_word(&b);
+        unsigned long v = BN_get_word(b);
         if (v == 0xffffffffL)
             throw std::runtime_error("out of range");
         return v;
@@ -62,7 +72,9 @@ class bignum {
 #define op(opname, func, args...)                               \
     bignum opname(const bignum &mod) {                          \
         bignum res;                                             \
-        throw_c(1 == func(res.bn(), &b, mod.bn(), ##args));      \
+        if (!func(res.bn(), b, mod.bn(), ##args)) {             \
+            throw std::runtime_error(#func " failed");           \
+        }                                                        \
         return res;                                             \
     }
 
@@ -74,7 +86,7 @@ class bignum {
 
 #define pred(predname, cmp)                                     \
     bool predname(const bignum &other) {                        \
-        return BN_cmp(&b, other.bn()) cmp;                      \
+        return BN_cmp(b, other.bn()) cmp;                       \
     }
 
     pred(operator<,  <  0)
@@ -86,18 +98,21 @@ class bignum {
 
     bignum invmod(const bignum &mod) {
         bignum r;
-        throw_c(BN_mod_inverse(r.bn(), &b, mod.bn(), _bignum_ctx::the_ctx()));
+        if (!BN_mod_inverse(r.bn(), b, mod.bn(), _bignum_ctx::the_ctx())) {
+            throw std::runtime_error("BN_mod_inverse failed");
+        }
         return r;
     }
 
  private:
-    BIGNUM b;
+    BIGNUM *b;  // 在 OpenSSL 1.1.x 中，BIGNUM 是一个指针
 };
 
 static inline std::ostream&
 operator<<(std::ostream &out, const bignum &bn)
 {
     char *s = BN_bn2dec(bn.bn());
+    if (s == nullptr) throw std::runtime_error("BN_bn2dec failed");
     out << s;
     OPENSSL_free(s);
     return out;

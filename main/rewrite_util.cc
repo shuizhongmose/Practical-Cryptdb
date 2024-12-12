@@ -653,16 +653,16 @@ encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
     // struct timeval start, end;
     // double duration = 0;
     for (const auto &it : enc_layers) {
-        LOG(encl) << "encrypt layer "
-                 << TypeText<SECLEVEL>::toText(it->level());
+        // LOG(encl) << "encrypt layer "
+        //          << TypeText<SECLEVEL>::toText(it->level());
         // gettimeofday(&start, nullptr);
-        size_t before = getCurrentRSS();
+        // size_t before = getCurrentRSS();
         new_enc = it->encrypt(*enc, IV);
-        size_t after = getCurrentRSS();
-        LOG(debug) << ">>>>>>> after it->encrypt, Total memory: " 
-                    << after << " bytes, Memory usage change: " 
-                    << (after - before) << " bytes, and current_thd is :"
-                    << current_thd;
+        // size_t after = getCurrentRSS();
+        // LOG(debug) << ">>>>>>> after it->encrypt, Total memory: " 
+        //             << after << " bytes, Memory usage change: " 
+        //             << (after - before) << " bytes, and current_thd is :"
+        //             << current_thd;
         // gettimeofday(&end, nullptr);
         // duration = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
         // LOG(debug) << it->name() << "::encrypt duration is " << duration;

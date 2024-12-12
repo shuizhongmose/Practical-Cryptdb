@@ -407,7 +407,7 @@ SharedProxyState::SharedProxyState(ConnectionInfo ci,
 }
 
 SharedProxyState::~SharedProxyState() {
-    LOG(debug) << "---> destory SharedProxyState " << this;
+    // LOG(debug) << "---> destory SharedProxyState " << this;
 }
 
 int
@@ -449,7 +449,7 @@ static void
 embeddedTHDCleanup(THD *thd)
 {
     // 参考 `mysql-src/libmysqld/lib_sql.cc` 中 `static void emb_free_embedded_thd(MYSQL *mysql)` 的代码清空THD
-    size_t before = getCurrentRSS();
+    // size_t before = getCurrentRSS();
     if (thd) {
         mysql_mutex_lock(&LOCK_thread_count);
         thd->clear_data_list();
@@ -464,8 +464,8 @@ embeddedTHDCleanup(THD *thd)
         my_pthread_setspecific_ptr(THR_THD,  0);
         thd=0;
     }
-    size_t after = getCurrentRSS();
-    LOG(debug) << "=====> after embeddedTHDCleanup, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
+    // size_t after = getCurrentRSS();
+    // LOG(debug) << "=====> after embeddedTHDCleanup, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
 }
 
 void

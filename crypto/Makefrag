@@ -7,7 +7,7 @@ CRYPTOOBJ   := $(patsubst %.cc,$(OBJDIR)/crypto/%.o,$(CRYPTOSRC))
 all:	$(OBJDIR)/libedbcrypto.a $(OBJDIR)/libedbcrypto.so
 
 $(OBJDIR)/libedbcrypto.so: $(CRYPTOOBJ) $(OBJDIR)/libedbutil.so
-	$(CXX) -fPIC -shared -g -o $@ $(CRYPTOOBJ) $(LDFLAGS) $(LDRPATH) \
+	$(CXX) -fPIC -shared -O2 -o $@ $(CRYPTOOBJ) $(LDFLAGS) $(LDRPATH) \
 	       -ledbutil -lcrypto -lntl -lpthread
 
 $(OBJDIR)/libedbcrypto.a: $(CRYPTOOBJ)
@@ -15,7 +15,7 @@ $(OBJDIR)/libedbcrypto.a: $(CRYPTOOBJ)
 
 #all:	$(OBJDIR)/crypto/x
 $(OBJDIR)/crypto/x: $(OBJDIR)/crypto/x.o $(OBJDIR)/libedbcrypto.so
-	$(CXX) $< -g -o $@ $(LDFLAGS) $(LDRPATH) -ledbcrypto
+	$(CXX) $< -O2 -o $@ $(LDFLAGS) $(LDRPATH) -ledbcrypto
 
 #install: install_crypto
 

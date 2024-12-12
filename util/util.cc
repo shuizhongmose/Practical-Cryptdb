@@ -478,7 +478,7 @@ leadingZeros(const std::string &input, size_t count)
     // }
     // Calculate the number of zeros needed
     size_t numZeros = count - input.length();
-    LOG(debug) << "numZeros = " << numZeros;
+    // LOG(debug) << "numZeros = " << numZeros;
 
     // Construct the leading zeros string
     std::string zeros(numZeros, '0');

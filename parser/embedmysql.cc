@@ -24,9 +24,9 @@ extern "C" void *create_embedded_thd(int client_flag);
 
 void
 query_parse::cleanup() {
-    size_t before = getCurrentRSS();
+    // size_t before = getCurrentRSS();
     if (t) {
-        LOG(debug) << "=====> clean THD " << t;
+        // LOG(debug) << "=====> clean THD " << t;
         mysql_mutex_lock(&LOCK_thread_count);
         t->clear_data_list();
         thread_count--;
@@ -47,8 +47,8 @@ query_parse::cleanup() {
         my_pthread_setspecific_ptr(THR_THD,  0);
         t=0;
     }
-    size_t after = getCurrentRSS();
-    LOG(debug) << "=====> after clean THD, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
+    // size_t after = getCurrentRSS();
+    // LOG(debug) << "=====> after clean THD, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
 }
 
 query_parse::~query_parse() {

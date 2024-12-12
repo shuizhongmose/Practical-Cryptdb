@@ -363,25 +363,69 @@ DER_decode_RSA_private(const string &s)
 }
 
 static void
-remove_private_key(RSA *r)
-{
-    r->d = r->p = r->q = r->dmp1 = r->dmq1 = r->iqmp = 0;
+remove_private_key(RSA *r) {
+    const BIGNUM* d;
+    const BIGNUM* p;
+    const BIGNUM* q;
+    
+    // 获取公钥和私钥部分
+    RSA_get0_key(r, &d, &p, &q);
+
+    // 如果 d, p, q 存在，则释放它们
+    if (d) BN_free(const_cast<BIGNUM*>(d));  // 使用 const_cast 去除 const 限制
+    if (p) BN_free(const_cast<BIGNUM*>(p));  // 使用 const_cast 去除 const 限制
+    if (q) BN_free(const_cast<BIGNUM*>(q));  // 使用 const_cast 去除 const 限制
+
+    // 清空私钥部分（如果有的话）
+    RSA_set0_key(r, nullptr, nullptr, nullptr);
 }
 
 //Credits: the above five functions are from "secure programming cookbook for
 // C++"
 
-void
-generateKeys(PKCS * & pk, PKCS * & sk)
+void generateKeys(PKCS*& pk, PKCS*& sk)
 {
-    // LOG(crypto) << "pkcs generate";
-    PKCS * key =  RSA_generate_key(PKCS_bytes_size*8, 3, NULL, NULL);
+    // 创建一个新的 RSA 对象
+    RSA* key = RSA_new();
+    if (key == nullptr) {
+        // 错误处理
+        throw std::runtime_error("Failed to create RSA object");
+    }
 
+    // 创建公钥指数 e，设置为 3
+    BIGNUM* e = BN_new();
+    if (e == nullptr) {
+        // 错误处理
+        RSA_free(key);
+        throw std::runtime_error("Failed to create BIGNUM for public exponent");
+    }
+    BN_set_word(e, 3);  // 设置公钥指数为 3
+
+    // 生成 RSA 密钥对
+    if (RSA_generate_key_ex(key, PKCS_bytes_size * 8, e, nullptr) != 1) {
+        // 错误处理
+        BN_free(e);
+        RSA_free(key);
+        throw std::runtime_error("Failed to generate RSA key pair");
+    }
+
+    // 清除私钥部分（仅保留公钥部分）
+    remove_private_key(key);
+
+    // 复制私钥
     sk = RSAPrivateKey_dup(key);
+    if (sk == nullptr) {
+        // 错误处理
+        BN_free(e);
+        RSA_free(key);
+        throw std::runtime_error("Failed to duplicate private key");
+    }
 
+    // 复制公钥
     pk = key;
-    remove_private_key(pk);
 
+    // 清理
+    BN_free(e);
 }
 
 string

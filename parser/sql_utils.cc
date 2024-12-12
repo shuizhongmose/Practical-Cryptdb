@@ -33,7 +33,7 @@ init_mysql(const string &embed_db){
         "--character-set-server=utf8",
         "--language=" MYSQL_BUILD_DIR "/sql/share/"
     };
-    LOG(debug) << "begin to call mysql_library_init";
+    // LOG(debug) << "begin to call mysql_library_init";
     assert(0 == mysql_library_init(sizeof(mysql_av)/sizeof(mysql_av[0]),
                                   (char**) mysql_av, 0));
     assert(0 == mysql_thread_init());
