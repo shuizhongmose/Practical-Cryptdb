@@ -55,10 +55,29 @@ run_with_valgrind_massif(){
             --time-unit=B \
             --detailed-freq=1 \
             --threshold=0 \
-            --pages-as-heap=no \
             ./obj/main/change_test > change_test.log 2>&1 &
 }
 
+## use kcg file
+## 使用valgrind+massif分析
+run_with_callgrind (){
+  nohup valgrind --time-stamp=yes \
+      --tool=callgrind \
+      --callgrind-out-file=xtmemory.kcg \
+      --dump-line=yes \
+      --dump-instr=yes \
+      --compress-strings=yes \
+      --compress-pos=yes \
+      --instr-atstart=yes \
+      --collect-atstart=yes \
+      --collect-jumps=yes \
+      --collect-bus=yes \
+      --collect-systime=yes \
+      --cache-sim=yes \
+      --branch-sim=yes \
+      ./obj/main/change_test > change_test.log 2>&1 &
+
+}
 
 echo "Choose the action to perform:"
 echo "1) run_without_nohup"
@@ -66,7 +85,8 @@ echo "2) run_with_nohup"
 echo "3) Run with Valgrind"
 echo "4) Run with Valgrind + GDB"
 echo "5) Run with Valgrind + Massif"
-read -p "Enter choice (1, 2, 3, 4, 5): " choice
+echo "6) Run with run_with_callgrind, can be analysised by kcachegrind"
+read -p "Enter choice (1, 2, 3, 4, 5, 6): " choice
 
 case $choice in
   1)
@@ -83,6 +103,9 @@ case $choice in
     ;;
   5)
     run_with_valgrind_massif
+    ;;
+  6)
+    run_with_callgrind
     ;;
   *)
     echo "Invalid choice. Exiting."

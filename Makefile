@@ -24,7 +24,7 @@ TOP	 := $(shell echo $${PWD-`pwd`})
 #CXX	 := g++
 AR	 := ar
 ## -g -O0 -> -O2
-CXXFLAGS := -O2 -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
+CXXFLAGS := -g -O0 -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
 	    -Wall -Wpointer-arith -Wendif-labels -Wformat=2  \
 	    -Wextra -Wmissing-noreturn -Wwrite-strings -Wno-unused-parameter \
 	    -Wno-deprecated \
