@@ -67,12 +67,12 @@ class cryptdb_logger : public std::stringstream {
             local = localtime(&t); //转为本地时间
             strftime(buf, 64, "%Y-%m-%d %H:%M:%S", local);
             
-            std::stringstream temp_stream;
-            temp_stream << str();
+            // std::stringstream temp_stream;
+            // temp_stream << str();
             // Output the log entry with current date and time
             std::cout << buf << " - " // Use put_time to format the datetime
                       << file << ":" << line << " (" << func << "): " 
-                      << "[" << log_group_to_name[log_level] << "] " << temp_stream.str() << std::endl;
+                      << "[" << log_group_to_name[log_level] << "] " << str() << std::endl;
         }
 
     }

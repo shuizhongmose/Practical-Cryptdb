@@ -1,8 +1,16 @@
 MYSRC := $(shell pwd)/mysql-src
 MYBUILD := $(MYSRC)/build
 RPATH := 1
-
 CXX := g++-4.8
+
+BUILD_TYPE ?= debug
+ifeq ($(BUILD_TYPE), release)
+	DRFLAG = -O2
+else
+	DRFLAG = -g -O0
+endif
+$(info BUILD_TYPE is $(BUILD_TYPE))
+$(info DRFLAG is $(DRFLAG))
 
 # install mysql 5.5.60 on ubuntu 16.04 mannully in /usr/local/mysql
 UBUNTU_VERSION := $(shell lsb_release -rs)
@@ -24,12 +32,13 @@ TOP	 := $(shell echo $${PWD-`pwd`})
 #CXX	 := g++
 AR	 := ar
 ## -g -O0 -> -O2
-CXXFLAGS := -g -O0 -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
+CXXFLAGS := $(DRFLAG) -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
 	    -Wall -Wpointer-arith -Wendif-labels -Wformat=2  \
 	    -Wextra -Wmissing-noreturn -Wwrite-strings -Wno-unused-parameter \
 	    -Wno-deprecated \
 	    -Wmissing-declarations -Woverloaded-virtual  \
 	    -Wunreachable-code -D_GNU_SOURCE -std=c++0x -I$(TOP)
+
 LDFLAGS  := -L$(TOP)/$(OBJDIR) -L/usr/local/lib -Wl,--no-undefined
 
 

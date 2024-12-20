@@ -75,6 +75,8 @@ vector<string> queries1{
 
 int
 main(int argc,char ** argv) {
+    std::time_t start_time = std::time(nullptr);
+
     char *buffer;
     if((buffer = getcwd(NULL, 0)) == NULL){  
         perror("getcwd error");  
@@ -86,9 +88,9 @@ main(int argc,char ** argv) {
     {
         big_proxy b;
         
-        // 插入10000行数据
+        // 插入100行数据
         std::ostringstream oss;
-        for (int i=1; i<=3; i+=5) {
+        for (int i=1; i<=1000; i+=5) {
             oss.str("");
             oss << "INSERT INTO student VALUES ("
                 << i << ", 'shao" << i << "', 20), "
@@ -116,5 +118,8 @@ main(int argc,char ** argv) {
     size_t after = getCurrentRSS();
     LOG(debug) << "malloc_trim(0) = " << malloc_trim(0);
     LOG(debug) << "Total memory at end of program: " << after;
+
+    std::time_t end_time = std::time(nullptr);
+    LOG(debug) << "Total time: " << (end_time - start_time) ;
     return 0;
 }

@@ -10,7 +10,7 @@ EDBPARSER_OBJS	:= $(patsubst %.cc,$(OBJDIR)/parser/%.o,$(PARSERSRC))
 $(OBJDIR)/libedbparser.so: $(EDBPARSER_OBJS) \
 			   $(OBJDIR)/libedbutil.so \
 			   $(OBJDIR)/libedbcrypto.so
-	$(CXX) -shared -g -O0 -o $@ $(EDBPARSER_OBJS) $(LDFLAGS) $(LDRPATH) \
+	$(CXX) -shared $(DRFLAG) -o $@ $(EDBPARSER_OBJS) $(LDFLAGS) $(LDRPATH) \
                -ledbutil -ledbcrypto \
 	       -Wl,--whole-archive -L$(MYBUILD)/libmysqld -lmysqld \
 	       -Wl,--no-whole-archive -laio -lz -ldl -lrt -lcrypt

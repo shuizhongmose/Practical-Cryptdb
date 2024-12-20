@@ -1477,20 +1477,13 @@ HOM::newCreateField(const Create_field &cf,
 
 void
 HOM::unwait() const {
-    // size_t before = getCurrentRSS();
     const std::unique_ptr<streamrng<arc4>>
         prng(new streamrng<arc4>(seed_key));
-    // size_t after = getCurrentRSS();
-    // LOG(debug) << ">>>>>>> after prng, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
     if (sk != nullptr) {
         delete sk;
         sk = nullptr; // 防止悬空指针
     }
-    // before = getCurrentRSS();
     sk = new Paillier_priv(Paillier_priv::keygen(prng.get(), nbits));
-    // after = getCurrentRSS();
-    // LOG(debug) << ">>>>>>> after new Paillier_priv, Total memory: " << after << " bytes, Memory usage change: " << (after - before) << " bytes";
-    // std::cout << "Size of Paillier_priv: " << sizeof(*sk) << " bytes" << std::endl;
     waiting = false;
 }
 

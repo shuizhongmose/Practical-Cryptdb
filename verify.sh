@@ -54,7 +54,8 @@ run_with_valgrind_massif(){
             --massif-out-file=massif.out \
             --time-unit=B \
             --detailed-freq=1 \
-            --threshold=0 \
+            --threshold=0.5 \
+            --max-snapshots=100 \
             ./obj/main/change_test > change_test.log 2>&1 &
 }
 
@@ -79,14 +80,22 @@ run_with_callgrind (){
 
 }
 
+## use heaptrack
+## 使用valgrind+massif分析
+run_with_heaptrack (){
+  nohup heaptrack ./obj/main/change_test > change_test.log 2>&1 &
+
+}
+
 echo "Choose the action to perform:"
 echo "1) run_without_nohup"
 echo "2) run_with_nohup"
-echo "3) Run with Valgrind"
+echo "3) Run with Valgrind default"
 echo "4) Run with Valgrind + GDB"
 echo "5) Run with Valgrind + Massif"
-echo "6) Run with run_with_callgrind, can be analysised by kcachegrind"
-read -p "Enter choice (1, 2, 3, 4, 5, 6): " choice
+echo "6) Run with valgrind + callgrind, can be analysised by kcachegrind"
+echo "7) Run with heaptrack"
+read -p "Enter choice (1, 2, 3, 4, 5, 6, 7): " choice
 
 case $choice in
   1)
@@ -106,6 +115,9 @@ case $choice in
     ;;
   6)
     run_with_callgrind
+    ;;
+  7)
+    run_with_heaptrack
     ;;
   *)
     echo "Invalid choice. Exiting."
