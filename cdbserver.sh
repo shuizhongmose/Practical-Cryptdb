@@ -73,7 +73,7 @@ case $choice in
     run_with_nohup
     ;;
   *)
-    echo "Invalid choice. Exiting."
-    exit 1
+    echo "Run with default choice 1: run_without_nohup"
+    run_without_nohup
     ;;
 esac

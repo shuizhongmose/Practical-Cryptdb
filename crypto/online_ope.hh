@@ -5,6 +5,7 @@
 
 #include <crypto/blowfish.hh>
 #include <util/errstream.hh>
+#include <util/cryptdb_log.hh>
 
 using namespace std;
 
@@ -32,8 +33,8 @@ ffsl(uint64_t mask)
 template<class EncT>
 class ope_server {
  public:
-    EncT lookup(uint64_t v, uint64_t nbits) const;
-    void insert(uint64_t v, uint64_t nbits, const EncT &encval);
+    std::tuple<EncT, uint64_t, uint64_t> lookup(uint64_t v, uint64_t nbits) const;
+    std::pair<uint64_t, uint64_t> insert(uint64_t v, uint64_t nbits, const EncT &encval);
 
     ope_server();
     ~ope_server();
@@ -42,8 +43,8 @@ class ope_server {
     tree_node<EncT> *root;
 
     tree_node<EncT> * tree_lookup(tree_node<EncT> *root, uint64_t v, uint64_t nbits) const;
-    void tree_insert(tree_node<EncT> **np, uint64_t v, const EncT &encval,
-		     uint64_t nbits, uint64_t pathlen);
+    std::pair<uint64_t, uint64_t> tree_insert(tree_node<EncT> **np, uint64_t v, uint64_t ope_v, const EncT &encval,
+		     uint64_t nbits, uint64_t ope_nbits, uint64_t pathlen);
 
     //relabels the tree rooted at the node whose parent is "parent"
     // size indicates the size of the subtree of the node rooted at parent
@@ -72,7 +73,8 @@ class ope_client {
 
     V decrypt(uint64_t ct) const {
 	    uint64_t nbits = 64 - ffsl((uint64_t)ct);
-        return block_decrypt(s->lookup(ct>>(64-nbits), nbits));
+        auto nd = s->lookup(ct>>(64-nbits), nbits);
+        return block_decrypt(std::get<0>(nd));
     }
 
     uint64_t encrypt(V pt) const {
@@ -80,10 +82,12 @@ class ope_client {
         uint64_t nbits = 0;
         try {
             for (;;) {
-		        V xct = s->lookup(v, nbits);
+		        auto nd = s->lookup(v, nbits);
+                V xct = std::get<0>(nd);
 		        V xpt = block_decrypt(xct);
-
                 if (pt == xpt) {
+                    v = std::get<1>(nd);
+                    nbits = std::get<2>(nd);
 		            break;
 		        }
                 if (pt < xpt) {
@@ -95,12 +99,14 @@ class ope_client {
                 nbits++;
             }
         } catch (ope_lookup_failure&) {
-            s->insert(v, nbits, block_encrypt(pt));
+            auto enc = block_encrypt(pt);
+            auto res = s->insert(v, nbits, enc);
+            v = res.first;
+            nbits = res.second;
             //relabeling may have been triggered so we need to lookup value again
             //todo: optimize by avoiding extra tree lookup
-            return encrypt(pt);
+            // return encrypt(pt);
         }
-
         throw_c(nbits <= 63);
         return (v<<(64-nbits)) | (1ULL<<(63-nbits));
     }

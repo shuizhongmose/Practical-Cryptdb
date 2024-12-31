@@ -7,7 +7,10 @@
  */
 
 #include <string>
-#include <map>
+#include <memory>
+#include <mutex>
+#include <vector>
+#include <cstdint>
 
 #include <crypto/prng.hh>
 #include <crypto/aes.hh>
@@ -30,22 +33,12 @@ const static uint nBITS = sizeof(NBITS_TYPE)*8;
 class OPE {
  public:
     OPE(const std::string &keyarg, size_t plainbits, size_t cipherbits)
-    : key(keyarg), pbits(plainbits), cbits(cipherbits), aesk(""), ope_clnt(nullptr) {
-
-        bf = new blowfish(key);
-        fk = new ffx2_block_cipher<blowfish, nBITS>(bf,{});
-
-        // Initialize ope_clnt with the block cipher
-        ope_serv = new ope_server<NBITS_TYPE>();
-        ope_clnt = new ope_client<NBITS_TYPE, ffx2_block_cipher<blowfish, nBITS>>(fk, ope_serv);
+    : key(keyarg), pbits(plainbits), cbits(cipherbits), aesk("") {
+        // 使用 std::call_once 确保静态成员只初始化一次
+        std::call_once(init_flag, &OPE::initialize_static_members, key);
     }
 
-    ~OPE() {
-        delete bf;
-        delete fk;
-        delete ope_serv;
-        delete ope_clnt; // Clean up allocated memory
-    }
+    ~OPE() = default; // 不需要手动删除静态成员
 
     NTL::ZZ encrypt(const NTL::ZZ &ptext);
     NTL::ZZ decrypt(const NTL::ZZ &ctext);
@@ -58,9 +51,24 @@ class OPE {
     size_t cbits;
     std::string aesk;
     
-    blowfish *bf;
-    ffx2_block_cipher<blowfish, nBITS> *fk;
-    ope_server<NBITS_TYPE> *ope_serv;
-    ope_client<NBITS_TYPE, ffx2_block_cipher<blowfish, nBITS>> *ope_clnt;
-};
+    static void initialize_static_members(const std::string &keyarg) {
+        bf = std::unique_ptr<blowfish>(new blowfish(keyarg));
 
+        fk = std::unique_ptr<ffx2_block_cipher<blowfish, nBITS>>(
+            new ffx2_block_cipher<blowfish, nBITS>(bf.get(), {}));
+
+        ope_serv = std::unique_ptr<ope_server<NBITS_TYPE>>(
+            new ope_server<NBITS_TYPE>());
+
+        ope_clnt = std::unique_ptr<ope_client<NBITS_TYPE, ffx2_block_cipher<blowfish, nBITS>>>(
+            new ope_client<NBITS_TYPE, ffx2_block_cipher<blowfish, nBITS>>(fk.get(), ope_serv.get()));
+    }
+
+    // 用于确保静态成员只初始化一次
+    static std::once_flag init_flag;
+    // 静态成员变量，使用智能指针管理内存
+    static std::unique_ptr<blowfish> bf;
+    static std::unique_ptr<ffx2_block_cipher<blowfish, nBITS>> fk;
+    static std::unique_ptr<ope_server<NBITS_TYPE>> ope_serv;
+    static std::unique_ptr<ope_client<NBITS_TYPE, ffx2_block_cipher<blowfish, nBITS>>> ope_clnt;
+};

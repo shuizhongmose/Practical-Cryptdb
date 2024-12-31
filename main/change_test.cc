@@ -90,7 +90,7 @@ main(int argc,char ** argv) {
         
         // 插入100行数据
         std::ostringstream oss;
-        for (int i=1; i<=1000; i+=5) {
+        for (int i=1; i<=10000; i+=5) {
             oss.str("");
             oss << "INSERT INTO student VALUES ("
                 << i << ", 'shao" << i << "', 20), "

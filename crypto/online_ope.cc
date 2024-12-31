@@ -10,10 +10,13 @@
 template<class EncT>
 struct tree_node {
     EncT enc_val;
+    uint64_t ope_v;
+    uint64_t ope_nbits;
     tree_node *left;
     tree_node *right;
 
-    tree_node(const EncT &ev) : enc_val(ev), left(0), right(0) {}
+    tree_node(const EncT &ev, uint64_t v, uint64_t nbits) 
+        : enc_val(ev), ope_v(v), ope_nbits(nbits), left(0), right(0) {}
     ~tree_node() {
         if (left)
             delete left;
@@ -43,20 +46,20 @@ struct tree_node {
 template<class EncT>
 string print(tree_node<EncT> * n) {
     if (!n) {
-	return "NULL";
+	    return "NULL";
     } else {
-	stringstream ss;
-	ss << n->enc_val;
-	return ss.str();
+	    stringstream ss;
+	    ss << n->enc_val;
+	    return ss.str();
     }
 }
 
 template<class EncT>
 void print_tree(tree_node<EncT> * n) {
     if (n) {
-	cerr << "node " << n->enc_val << " has left " << print(n->left) << " and right " << print(n->right) << "\n";
-	print_tree(n->left);
-	print_tree(n->right);
+        cerr << "node " << n->enc_val << "("<< n <<") ope_v = "<< n->ope_v << ", has left " << print(n->left) << "(" << n->left << ") and right " << print(n->right) << "(" << n->right <<")\n";
+        print_tree(n->left);
+        print_tree(n->right);
     }
 }
 
@@ -65,7 +68,7 @@ tree_node<EncT> *
 ope_server<EncT>::tree_lookup(tree_node<EncT> *root, uint64_t v, uint64_t nbits) const
 {
     if (nbits == 0) {
-	return root;
+	    return root;
     }
 
     if (!root) {
@@ -115,25 +118,25 @@ ope_server<EncT>::relabel(tree_node<EncT> * parent, bool isLeft, uint64_t size) 
 
     tree_node<EncT> * scapegoat;
     if (parent == NULL) {
-	scapegoat = root;
+	    scapegoat = root;
     } else {
-	scapegoat = (isLeft == 1) ? parent->left : parent->right;
+	    scapegoat = (isLeft == 1) ? parent->left : parent->right;
     }
 
-    tree_node<EncT> * w = new tree_node<EncT>(0);
+    tree_node<EncT> * w = new tree_node<EncT>(0, 0, 0);
     tree_node<EncT> * z = flatten(scapegoat, w);
 
     build_tree(size, z);
 
     if (parent) {
-	if (isLeft) {
-	    parent->left = w->left;
-	} else {
-	    parent->right = w->left;
-	}
+        if (isLeft) {
+            parent->left = w->left;
+        } else {
+            parent->right = w->left;
+        }
     } else {
-	//root has changed
-	root = w->left;
+	    //root has changed
+	    root = w->left;
     }
 
     w->left = 0;    /* Something seems fishy here */
@@ -144,26 +147,33 @@ ope_server<EncT>::relabel(tree_node<EncT> * parent, bool isLeft, uint64_t size) 
 
 
 template<class EncT>
-void
-ope_server<EncT>::tree_insert(tree_node<EncT> **np, uint64_t v,
-			      const EncT &encval, uint64_t nbits, uint64_t pathlen)
+std::pair<uint64_t, uint64_t>
+ope_server<EncT>::tree_insert(tree_node<EncT> **np, uint64_t v, uint64_t ope_v,
+			      const EncT &encval, uint64_t nbits, uint64_t ope_nbits,
+                  uint64_t pathlen)
 {
     if (nbits == 0) {
-        // throw_c(*np == 0, "tree_insert, nbits == 0");
-
-        tree_node<EncT> *nd = new tree_node<EncT>(encval);
+        throw_c(*np == 0, "tree_insert, nbits == 0");
+        tree_node<EncT> *nd = new tree_node<EncT>(encval, ope_v, ope_nbits);
         *np = nd;
+		
         update_tree_stats(pathlen);
+
         if (trigger(pathlen)) {
             bool isLeft;
             uint64_t subtree_size;
             tree_node<EncT> * parent = node_to_balance(v, pathlen, isLeft, subtree_size);
-                relabel(parent, isLeft, subtree_size);
+            relabel(parent, isLeft, subtree_size);
         }
+        return std::make_pair(ope_v, ope_nbits);
     } else {
         throw_c(*np);
-        tree_insert((v&(1ULL<<(nbits-1))) ? &(*np)->right : &(*np)->left,
-                    v, encval, nbits-1, pathlen);
+
+		uint64_t goRight = v&(1ULL<<(nbits-1));
+        
+        tree_insert(goRight ? &((*np)->right) : &((*np)->left), 
+                    v, goRight ? ((*np)->ope_v << 1 | 1) : ((*np)->ope_v << 1 | 0), 
+                    encval, nbits-1, (*np)->ope_nbits+1, pathlen);
     }
 }
 
@@ -186,12 +196,12 @@ unbalanced_node(tree_node<EncT> * parent, tree_node<EncT> * current,
 		bool & isLeft, uint64_t & child_size, bool & found, uint64_t & total_size) {
 
     if (nbits == 0) {//found v node
-	child_size = 1;
-	return current;
+        child_size = 1;
+        return current;
     }
 
     if (!current)  {//v does not exist
-	return NULL;
+	    return NULL;
     }
 
     //next child to go to in search for v
@@ -201,32 +211,32 @@ unbalanced_node(tree_node<EncT> * parent, tree_node<EncT> * current,
 					    v, nbits-1, alpha,
 					    isLeft, child_size, found, total_size);
     if (res == NULL) {
-	//search failed
-	return res;
+        //search failed
+        return res;
     }
     if (found) {//the unbalanced node has been found
-	return res;
+	    return res;
     }
     //unbalanced node not yet found: test if current node is unbalanced
     uint64_t other_child_size = 0;
 
     if (child == current->right) {
-	other_child_size = (current->left == NULL) ? 0 : current->left->count();
+	    other_child_size = (current->left == NULL) ? 0 : current->left->count();
     } else {
-	other_child_size = (current->right == NULL) ? 0 : current->right->count();
+	    other_child_size = (current->right == NULL) ? 0 : current->right->count();
     }
 
     if (isWeightUnbalanced(child_size, other_child_size, alpha)) {
-	found = true;
-	total_size = child_size + other_child_size + 1;
-	if (parent != NULL) {
-	    isLeft = (parent->left == current);
-	}
-	return parent;
+        found = true;
+        total_size = child_size + other_child_size + 1;
+        if (parent != NULL) {
+            isLeft = (parent->left == current);
+        }
+        return parent;
     } else {
-	//this node is balanced, recursion takes us up
+	    //this node is balanced, recursion takes us up
         child_size = child_size + 1 + other_child_size;
-	return res;
+	    return res;
     }
 
 }
@@ -263,15 +273,15 @@ ope_server<EncT>::trigger(uint64_t path_len) const
 {
     //basic scapegoat trigger
     if ((path_len > 1) && (path_len > log(num_nodes)/log(1/scapegoat_alpha) + 1)) {
-	return true;
+	    return true;
     } else {
-	return false;
+	    return false;
     }
 
 }
 
 template<class EncT>
-EncT
+std::tuple<EncT, uint64_t, uint64_t>
 ope_server<EncT>::lookup(uint64_t v, uint64_t nbits) const
 {
     auto n = tree_lookup(root, v, nbits);
@@ -279,16 +289,15 @@ ope_server<EncT>::lookup(uint64_t v, uint64_t nbits) const
         throw ope_lookup_failure();
     }
 
-    return n->enc_val;
-
+    return std::make_tuple(n->enc_val, n->ope_v, n->ope_nbits);
 }
 
 template<class EncT>
-void
+std::pair<uint64_t, uint64_t>
 ope_server<EncT>::insert(uint64_t v, uint64_t nbits, const EncT &encval)
 {
-    tree_insert(&root, v, encval, nbits, nbits);
-
+    // 初始时，v=nbits=0, ope_v=ope_nbits=0
+    return tree_insert(&root, v, v, encval, nbits, nbits, nbits);
 }
 
 template<class EncT>
