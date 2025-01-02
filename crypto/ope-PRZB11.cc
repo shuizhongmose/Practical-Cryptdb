@@ -23,24 +23,20 @@ std::once_flag OPE::init_flag;
 ZZ
 OPE::encrypt(const ZZ &ptext)
 {
-    LOG(debug) << "-----> origin text is " << ptext;
     std::vector<uint64_t> pbytes = conv_zz_to_u64(ptext);
 
     std::vector<uint64_t> cbytes;
-    for (size_t i = 0; i < pbytes.size(); ++i) {
-        LOG(debug) << "begin to encrypt byte: " << pbytes[i]; 
+    for (size_t i = 0; i < pbytes.size(); ++i) { 
         cbytes.push_back(ope_clnt->encrypt(pbytes[i]));
     }
     
     auto res = conv_u64_to_zz(cbytes);
-    LOG(debug) << "------> OPE encrypt result is " << res;
     return res;
 }
 
 ZZ
 OPE::decrypt(const ZZ &ctext)
 {
-    LOG(debug) << ">>>>>> begin to decrypt " << ctext;
     std::vector<uint64_t> cbytes = conv_zz_to_u64(ctext);
 
     std::vector<uint64_t> pbytes; 
@@ -49,8 +45,22 @@ OPE::decrypt(const ZZ &ctext)
     }
 
     auto res = conv_u64_to_zz(pbytes);
-    LOG(debug) << ">>>>>> decrypt result is " << res;
     return res;
+}
+
+// 辅助函数定义
+void uint64_to_big_endian_bytes(uint64_t value, unsigned char* bytes) {
+    for (int i = 0; i < 8; ++i) {
+        bytes[i] = static_cast<unsigned char>((value >> (56 - 8 * i)) & 0xFF);
+    }
+}
+
+uint64_t big_endian_bytes_to_uint64(const unsigned char* bytes) {
+    uint64_t value = 0;
+    for (int i = 0; i < 8; ++i) {
+        value = (value << 8) | bytes[i];
+    }
+    return value;
 }
 
 ZZ 
@@ -58,7 +68,9 @@ OPE::conv_u64_to_zz(const std::vector<uint64_t> u64_bytes) {
     // 获取 unsigned char* 指针
     size_t total_bytes = u64_bytes.size() * sizeof(uint64_t);
     std::unique_ptr<unsigned char[]> byte_ptr(new unsigned char[total_bytes]);
+
     std::memcpy(byte_ptr.get(), u64_bytes.data(), total_bytes);
+    
     // 计算总字节数
     return ZZFromBytes(reinterpret_cast<const uint8_t *>(byte_ptr.get()),
                        total_bytes);
@@ -66,35 +78,21 @@ OPE::conv_u64_to_zz(const std::vector<uint64_t> u64_bytes) {
 
 std::vector<uint64_t> 
 OPE::conv_zz_to_u64(const NTL::ZZ &zz) {
-    std::vector<uint64_t> result;
-
     // 计算 ZZ 的字节数
     size_t total_bytes = NTL::NumBytes(zz);
-
-    // 将 ZZ 转换为字节数组
+    
+    // 将 ZZ 转换为字节数组（大端字节序）
     std::unique_ptr<unsigned char[]> byte_ptr(new unsigned char[total_bytes]);
-    BytesFromZZ(byte_ptr.get(), zz, total_bytes);  // 使用 BytesFromZZ 将 ZZ 转换为字节
+    BytesFromZZ(byte_ptr.get(), zz, total_bytes);
 
-    // 使用指针转换将字节数组转换为 uint64_t 数组
-    uint64_t* ptr = reinterpret_cast<uint64_t*>(byte_ptr.get());
-
+    // 计算uint64_t数组的大小
     size_t num_elements = total_bytes / sizeof(uint64_t);
-    for (size_t i = 0; i < num_elements; ++i) {
-        result.push_back(ptr[i]);
+    if (total_bytes % sizeof(uint64_t) > 0) {
+        num_elements += 1;
     }
-
-    // 如果剩余的字节不满 64 位（即不足 8 字节），需要处理剩余的部分
-    size_t remaining_bytes = total_bytes % sizeof(uint64_t);
-    if (remaining_bytes > 0) {
-        uint64_t last_val = 0;
-        std::memcpy(&last_val, byte_ptr.get() + num_elements * sizeof(uint64_t), remaining_bytes);
-        result.push_back(last_val);
-    }
-
-    // 如果 ZZ 为零，则至少添加一个元素 0
-    if (result.empty()) {
-        result.push_back(0);
-    }
+    // 拷贝到uint64_t数组
+    std::vector<uint64_t> result(num_elements);
+    std::memcpy(result.data(), byte_ptr.get(), total_bytes);
 
     return result;
 }
